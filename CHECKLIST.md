@@ -7,8 +7,8 @@
 
 ## 📊 전체 진행 상황
 
-- [ ] Phase 0: 프로젝트 초기 설정 (1-2일)
-- [ ] Phase 1: 인증 시스템 (3-4일)
+- [o] Phase 0: 프로젝트 초기 설정 (1-2일)
+- [o] Phase 1: 인증 시스템 (3-4일)
 - [ ] Phase 2: 메모 CRUD (4-5일)
 - [ ] Phase 3: 폴더 관리 (3-4일)
 - [ ] Phase 4: 링크 요약 (Claude API) (4-5일)
@@ -59,34 +59,34 @@
 
 ### 1.1 회원가입/로그인 UI
 
-- [ ] 로그인 페이지 컴포넌트 (`LoginPage.jsx`)
-- [ ] 회원가입 페이지 컴포넌트 (`SignUpPage.jsx`)
-- [ ] "로그인 상태 유지" 체크박스
-- [ ] 다크모드 토글 버튼 (`DarkModeToggle.jsx`)
+- [o] 로그인 페이지 컴포넌트 (`LoginPage.jsx`)
+- [o] 회원가입 페이지 컴포넌트 (`SignUpPage.jsx`)
+- [o] "로그인 상태 유지" 체크박스
+- [o] 다크모드 토글 버튼 (`DarkModeToggle.jsx`)
 
 ### 1.2 Supabase Auth 연동
 
-- [ ] 인증 서비스 파일 (`src/services/auth.js`)
-  - [ ] `signUp` 함수 (승인 대기 상태)
-  - [ ] `signIn` 함수 (승인 여부 확인)
-  - [ ] `signOut` 함수
-  - [ ] `getCurrentUser` 함수
-- [ ] Protected Route 컴포넌트
-- [ ] React Router 설정 (`src/App.jsx`)
-- [ ] 자동 로그인 동작 확인
+- [o] 인증 서비스 파일 (`src/services/auth.js`)
+  - [o] `signUp` 함수 (승인 대기 상태)
+  - [o] `signIn` 함수 (승인 여부 확인)
+  - [o] `signOut` 함수
+  - [o] `getCurrentUser` 함수
+- [o] Protected Route 컴포넌트
+- [o] React Router 설정 (`src/main.jsx`)
+- [o] 자동 로그인 동작 확인
 
 ### 1.3 관리자 대시보드
 
-- [ ] 관리자 확인 훅 (`useAdmin.js`)
-- [ ] 관리자 페이지 (`AdminPage.jsx`)
-- [ ] 승인 대기 사용자 목록 표시
-- [ ] 승인/거절 버튼 기능
+- [o] 관리자 확인 훅 (`useAdmin.js`)
+- [o] 관리자 페이지 (`AdminPage.jsx`)
+- [o] 승인 대기 사용자 목록 표시
+- [o] 승인/거절 버튼 기능
 
 ### 1.4 사용자 상태 관리
 
-- [ ] React Query 설정
-- [ ] 전역 상태 관리 (Context API 또는 Zustand)
-- [ ] 로딩/에러 핸들링
+- [o] React Query 설정
+- [o] 전역 상태 관리 (Context API 또는 Zustand)
+- [o] 로딩/에러 핸들링
 
 ### ✅ Phase 1 완료 확인
 
@@ -569,4 +569,4 @@
 
 ---
 
-**마지막 업데이트**: 2025-11-01
+**마지막 업데이트**: 2025-11-02

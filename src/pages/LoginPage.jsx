@@ -59,16 +59,18 @@ function LoginPage() {
       <div className="w-full max-w-md">
         {/* 로고 */}
         <div className="text-center mb-4">
-          <img
-            src={logoLight}
-            alt="MemoEat Logo"
-            className="w-full h-auto dark:hidden"
-          />
-          <img
-            src={logoDark}
-            alt="MemoEat Logo"
-            className="w-full h-auto hidden dark:block"
-          />
+          <Link to="/" className="block">
+            <img
+              src={logoLight}
+              alt="MemoEat Logo"
+              className="w-full h-auto dark:hidden cursor-pointer"
+            />
+            <img
+              src={logoDark}
+              alt="MemoEat Logo"
+              className="w-full h-auto hidden dark:block cursor-pointer"
+            />
+          </Link>
         </div>
 
         {/* 로그인 폼 */}

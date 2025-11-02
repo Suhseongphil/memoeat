@@ -13,9 +13,7 @@ export const signUp = async (email, password) => {
       email,
       password,
       options: {
-        data: {
-          email_confirmed: false // 이메일 확인 필요
-        }
+        emailRedirectTo: `${window.location.origin}/dashboard`
       }
     })
 
@@ -221,4 +219,102 @@ export const onAuthStateChange = (callback) => {
   })
 
   return subscription
+}
+
+/**
+ * 승인 대기 중인 사용자 목록 가져오기 (관리자 전용)
+ * @returns {Promise<{users, error}>}
+ */
+export const getPendingApprovals = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('user_approvals')
+      .select('*')
+      .eq('is_approved', false)
+      .order('requested_at', { ascending: false })
+
+    if (error) throw error
+
+    return { users: data, error: null }
+  } catch (error) {
+    console.error('GetPendingApprovals error:', error)
+    return { users: [], error: error.message }
+  }
+}
+
+/**
+ * 승인된 사용자 목록 가져오기 (관리자 전용)
+ * @returns {Promise<{users, error}>}
+ */
+export const getApprovedUsers = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('user_approvals')
+      .select('*')
+      .eq('is_approved', true)
+      .order('approved_at', { ascending: false })
+
+    if (error) throw error
+
+    return { users: data, error: null }
+  } catch (error) {
+    console.error('GetApprovedUsers error:', error)
+    return { users: [], error: error.message }
+  }
+}
+
+/**
+ * 사용자 승인 (관리자 전용)
+ * @param {string} userId - 승인할 사용자 ID
+ * @returns {Promise<{success, error}>}
+ */
+export const approveUser = async (userId) => {
+  try {
+    // 현재 관리자 정보 가져오기
+    const { data: { user: admin } } = await supabase.auth.getUser()
+    if (!admin) throw new Error('관리자 인증이 필요합니다.')
+
+    // 사용자 승인 처리
+    const { error } = await supabase
+      .from('user_approvals')
+      .update({
+        is_approved: true,
+        approved_at: new Date().toISOString(),
+        approved_by: admin.id
+      })
+      .eq('user_id', userId)
+
+    if (error) throw error
+
+    return { success: true, error: null }
+  } catch (error) {
+    console.error('ApproveUser error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * 사용자 승인 거절 및 삭제 (관리자 전용)
+ * @param {string} userId - 거절할 사용자 ID
+ * @returns {Promise<{success, error}>}
+ */
+export const rejectUser = async (userId) => {
+  try {
+    // 1. user_approvals 테이블에서 삭제
+    const { error: approvalError } = await supabase
+      .from('user_approvals')
+      .delete()
+      .eq('user_id', userId)
+
+    if (approvalError) throw approvalError
+
+    // 2. Supabase Auth에서 사용자 삭제는 관리자 API 키가 필요하므로
+    // 프론트엔드에서는 user_approvals 테이블만 삭제
+    // (실제 사용자 삭제는 Supabase Dashboard나 Admin API로 처리)
+
+    return { success: true, error: null }
+  } catch (error) {
+    console.error('RejectUser error:', error)
+    return { success: false, error: error.message }
+  }
 }

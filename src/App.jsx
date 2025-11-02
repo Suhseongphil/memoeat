@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import logoLight from './assets/images/memoeat_logo_notepad.svg'
 import logoDark from './assets/images/memoeat_logo_notepad_dark_v2.svg'
 
@@ -56,16 +57,18 @@ function App() {
 
         {/* 로고 */}
         <div className="mb-8 max-w-md mx-auto">
-          <img
-            src={logoLight}
-            alt="MemoEat Logo"
-            className="w-full h-auto dark:hidden"
-          />
-          <img
-            src={logoDark}
-            alt="MemoEat Logo"
-            className="w-full h-auto hidden dark:block"
-          />
+          <Link to="/" className="block">
+            <img
+              src={logoLight}
+              alt="MemoEat Logo"
+              className="w-full h-auto dark:hidden cursor-pointer"
+            />
+            <img
+              src={logoDark}
+              alt="MemoEat Logo"
+              className="w-full h-auto hidden dark:block cursor-pointer"
+            />
+          </Link>
         </div>
 
         {/* 설명 */}
