@@ -1,7 +1,7 @@
 # ✅ MemoEat 개발 체크리스트
 
 > 개발 진행 상황을 추적하는 체크리스트입니다.  
-> 각 작업이 완료되면 `[ ]`를 `[x]`로 변경하세요.
+> 각 작업이 완료되면 `[ ]`를 `[o]`로 변경하세요.
 
 ---
 
@@ -27,12 +27,12 @@
 
 ### 0.1 개발 환경 구축
 
-- [ ] Node.js 설치 확인
-- [ ] Git 저장소 생성
-- [ ] Vite + React 프로젝트 생성
-- [ ] Tailwind CSS 설치 및 설정
-- [ ] 폴더 구조 생성 (`src/components`, `src/pages`, etc.)
-- [ ] 필수 라이브러리 설치
+- [o] Node.js 설치 확인
+- [o] Git 저장소 생성
+- [o] Vite + React 프로젝트 생성
+- [o] Tailwind CSS 설치 및 설정
+- [o] 폴더 구조 생성 (`src/components`, `src/pages`, etc.)
+- [o] 필수 라이브러리 설치
 
 ### 0.2 Supabase 설정
 
