@@ -17,6 +17,7 @@
 **MemoEat**는 웹페이지와 유튜브 영상의 핵심 내용을 AI가 자동으로 요약해주는 스마트 메모 애플리케이션입니다.
 
 ### 핵심 가치
+
 - 🔗 **링크를 입력하면 AI가 요약**: 긴 글이나 영상을 빠르게 이해
 - 📁 **Windows 탐색기 스타일 폴더 구조**: 익숙하고 직관적인 관리
 - ⚡ **자동 저장**: 별도의 저장 버튼 없이 실시간 자동 저장
@@ -28,6 +29,7 @@
 ## ✨ 주요 기능
 
 ### 1️⃣ AI 링크 요약 (Claude API)
+
 - 웹페이지 URL 입력 → 핵심 내용 자동 요약
 - 유튜브 영상 URL 입력 → 자막 분석 후 요약
   - 요리 영상: 레시피 + 조리 순서 자동 정리
@@ -35,18 +37,21 @@
 - 요약된 내용은 바로 편집 가능
 
 ### 2️⃣ 폴더 구조 관리
+
 - Windows 탐색기 스타일의 폴더 트리
 - 드래그 앤 드롭으로 메모/폴더 이동
 - 폴더 생성/이름 변경/삭제
 - 무제한 중첩 폴더 지원
 
 ### 3️⃣ 스마트 메모 편집
+
 - CodeMirror 기반 고성능 에디터
 - 자동 저장 (타이핑 후 2초 대기)
 - Undo/Redo 지원
 - 저장 상태 실시간 표시
 
 ### 4️⃣ 추가 기능
+
 - ⭐ 즐겨찾기
 - 🔍 메모 검색 (제목/내용)
 - 📤 메모 공유 (TXT 다운로드, 카카오톡)
@@ -57,6 +62,7 @@
 ## 🛠 기술 스택
 
 ### Frontend
+
 - **React 18** + **Vite** - 빠른 개발 환경
 - **Tailwind CSS** - 유틸리티 기반 스타일링
 - **CodeMirror 6** - 고성능 텍스트 에디터
@@ -65,17 +71,20 @@
 - **React Hot Toast** - 알림
 
 ### Backend & Database
+
 - **Supabase** - PostgreSQL + 인증 + RLS
   - JSONB 컬럼으로 NoSQL처럼 유연하게 활용
 - **Vercel Serverless Functions** - Claude API 호출 전용
 
 ### AI & External APIs
+
 - **Claude API (Anthropic)** - 링크 요약
 - **youtube-transcript** - 유튜브 자막 추출
 - **axios + cheerio** - 웹 크롤링
 - **Kakao SDK** - 카카오톡 공유
 
 ### Hosting & Deployment
+
 - **Vercel** - 프론트엔드 + Serverless Functions
 - **Supabase Cloud** - 데이터베이스 + 인증
 - **Domain**: memoeat.com (가비아)
@@ -85,6 +94,7 @@
 ## 🚀 시작하기
 
 ### 필수 요구사항
+
 - Node.js 18.x 이상
 - npm 또는 yarn
 - Git
@@ -167,6 +177,7 @@ memoeat/
 ## 🗄️ 데이터베이스 스키마
 
 ### user_approvals (관리자 승인)
+
 ```sql
 CREATE TABLE user_approvals (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -180,6 +191,7 @@ CREATE TABLE user_approvals (
 ```
 
 ### folders (JSONB 기반)
+
 ```sql
 CREATE TABLE folders (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -191,6 +203,7 @@ CREATE TABLE folders (
 ```
 
 ### notes (JSONB 기반)
+
 ```sql
 CREATE TABLE notes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -215,6 +228,7 @@ CREATE TABLE notes (
 ## 📝 Git 커밋 컨벤션
 
 ### 커밋 메시지 형식
+
 ```
 <type>(<scope>): <subject>
 
@@ -224,6 +238,7 @@ CREATE TABLE notes (
 ```
 
 ### Type
+
 - `feat`: 새로운 기능
 - `fix`: 버그 수정
 - `docs`: 문서 수정
@@ -233,6 +248,7 @@ CREATE TABLE notes (
 - `chore`: 빌드, 패키지 등 기타 작업
 
 ### 예시
+
 ```bash
 feat(auth): 관리자 승인 방식 회원가입 구현
 
@@ -259,7 +275,7 @@ MIT License - 자유롭게 사용, 수정, 배포 가능
 
 ## 📧 문의
 
-- **Email**: contact@memoeat.com
+- **Email**: karlly980404@gmail.com
 - **Website**: [memoeat.com](https://memoeat.com)
 
 ---

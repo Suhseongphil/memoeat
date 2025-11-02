@@ -36,14 +36,14 @@
 
 ### 0.2 Supabase 설정
 
-- [ ] Supabase 프로젝트 생성
-- [ ] 데이터베이스 테이블 생성
-  - [ ] `user_approvals` 테이블
-  - [ ] `folders` 테이블 (JSONB)
-  - [ ] `notes` 테이블 (JSONB)
-- [ ] JSONB 인덱스 생성
-- [ ] RLS 정책 설정
-- [ ] Supabase 클라이언트 파일 생성 (`src/services/supabase.js`)
+- [o] Supabase 프로젝트 생성
+- [o] 데이터베이스 테이블 생성
+  - [o] `user_approvals` 테이블
+  - [o] `folders` 테이블 (JSONB)
+  - [o] `notes` 테이블 (JSONB)
+- [o] JSONB 인덱스 생성
+- [o] RLS 정책 설정
+- [o] Supabase 클라이언트 파일 생성 (`src/services/supabase.js`)
 
 ### 0.3 Vercel 설정
 
