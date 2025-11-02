@@ -58,7 +58,7 @@ function LoginPage() {
 
       <div className="w-full max-w-md">
         {/* 로고 */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-4">
           <img
             src={logoLight}
             alt="MemoEat Logo"
@@ -69,9 +69,6 @@ function LoginPage() {
             alt="MemoEat Logo"
             className="w-full h-auto hidden dark:block"
           />
-          <p className="text-gray-600 dark:text-gray-400 mt-4">
-            정보를 먹다, 지식을 소화하다
-          </p>
         </div>
 
         {/* 로그인 폼 */}
