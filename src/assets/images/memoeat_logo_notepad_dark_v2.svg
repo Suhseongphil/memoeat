@@ -1,8 +1,8 @@
 <svg width="400" height="150" viewBox="0 0 400 150" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!-- 다크모드 버전 -->
   
-  <!-- 배경 (다크 그레이) -->
-  <rect width="400" height="150" rx="20" fill="#1A1A1A"/>
+  <!-- 배경 (남색) -->
+  <rect width="400" height="150" rx="20" fill="#1B2B4A"/>
   
   <!-- 메모장 아이콘 (왼쪽) -->
   <g transform="translate(60, 75)">

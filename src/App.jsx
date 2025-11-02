@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import logoLight from './assets/images/memoeat_logo_notepad.svg'
-import logoDark from './assets/images/memoeat_logo_notepad_dark.svg'
+import logoDark from './assets/images/memoeat_logo_notepad_dark_v2.svg'
 
 function App() {
   const [isDark, setIsDark] = useState(false)
