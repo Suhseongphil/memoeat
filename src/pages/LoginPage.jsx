@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { signIn } from '../services/auth'
+import DarkModeToggle from '../components/common/DarkModeToggle'
 import logoLight from '../assets/images/memoeat_logo_notepad.svg'
 import logoDark from '../assets/images/memoeat_logo_notepad_dark_v2.svg'
 
@@ -26,31 +28,48 @@ function LoginPage() {
     setError('')
     setLoading(true)
 
-    // TODO: Supabase 로그인 로직 구현
-    console.log('Login attempt:', formData)
+    try {
+      const { user, session, isApproved, error: signInError } = await signIn(
+        formData.email,
+        formData.password,
+        formData.rememberMe
+      )
 
-    setLoading(false)
+      if (signInError) {
+        setError(signInError)
+        return
+      }
+
+      if (isApproved) {
+        // 승인된 사용자는 메인 페이지로 이동 (추후 대시보드로 변경)
+        alert('로그인 성공!')
+        navigate('/dashboard')
+      }
+    } catch (err) {
+      setError(err.message || '로그인 중 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+      <DarkModeToggle />
+
       <div className="w-full max-w-md">
         {/* 로고 */}
         <div className="text-center mb-8">
           <img
             src={logoLight}
             alt="MemoEat Logo"
-            className="h-20 mx-auto dark:hidden"
+            className="w-full h-auto dark:hidden"
           />
           <img
             src={logoDark}
             alt="MemoEat Logo"
-            className="h-20 mx-auto hidden dark:block"
+            className="w-full h-auto hidden dark:block"
           />
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-white mt-4">
-            MemoEat
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-gray-600 dark:text-gray-400 mt-4">
             정보를 먹다, 지식을 소화하다
           </p>
         </div>
@@ -80,7 +99,7 @@ function LoginPage() {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all"
                 placeholder="your@email.com"
               />
             </div>
@@ -97,7 +116,7 @@ function LoginPage() {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all"
                 placeholder="••••••••"
               />
             </div>
@@ -121,7 +140,7 @@ function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? '로그인 중...' : '로그인'}
             </button>
@@ -132,7 +151,7 @@ function LoginPage() {
             계정이 없으신가요?{' '}
             <Link
               to="/signup"
-              className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
+              className="text-orange-600 dark:text-indigo-400 hover:text-orange-700 dark:hover:text-indigo-300 font-medium"
             >
               회원가입
             </Link>

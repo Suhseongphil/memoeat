@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { signUp } from '../services/auth'
+import DarkModeToggle from '../components/common/DarkModeToggle'
 import logoLight from '../assets/images/memoeat_logo_notepad.svg'
 import logoDark from '../assets/images/memoeat_logo_notepad_dark_v2.svg'
 
@@ -39,31 +41,51 @@ function SignUpPage() {
 
     setLoading(true)
 
-    // TODO: Supabase 회원가입 로직 구현
-    console.log('SignUp attempt:', formData)
+    try {
+      const { user, isAdmin, needsApproval, error: signUpError } = await signUp(
+        formData.email,
+        formData.password
+      )
 
-    setLoading(false)
+      if (signUpError) {
+        setError(signUpError)
+        return
+      }
+
+      if (isAdmin) {
+        // 관리자는 자동 승인되어 바로 로그인 페이지로 이동
+        alert('회원가입이 완료되었습니다. 로그인해주세요.')
+        navigate('/login')
+      } else if (needsApproval) {
+        // 일반 사용자는 승인 대기 메시지 표시
+        alert('회원가입이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.')
+        navigate('/login')
+      }
+    } catch (err) {
+      setError(err.message || '회원가입 중 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+      <DarkModeToggle />
+
       <div className="w-full max-w-md">
         {/* 로고 */}
         <div className="text-center mb-8">
           <img
             src={logoLight}
             alt="MemoEat Logo"
-            className="h-20 mx-auto dark:hidden"
+            className="w-full h-auto dark:hidden"
           />
           <img
             src={logoDark}
             alt="MemoEat Logo"
-            className="h-20 mx-auto hidden dark:block"
+            className="w-full h-auto hidden dark:block"
           />
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-white mt-4">
-            MemoEat
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-gray-600 dark:text-gray-400 mt-4">
             정보를 먹다, 지식을 소화하다
           </p>
         </div>
@@ -93,7 +115,7 @@ function SignUpPage() {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all"
                 placeholder="your@email.com"
               />
             </div>
@@ -110,7 +132,7 @@ function SignUpPage() {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all"
                 placeholder="최소 6자 이상"
               />
             </div>
@@ -127,7 +149,7 @@ function SignUpPage() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-indigo-400 focus:border-transparent transition-all"
                 placeholder="비밀번호 재입력"
               />
             </div>
@@ -143,7 +165,7 @@ function SignUpPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? '회원가입 중...' : '회원가입'}
             </button>
@@ -154,7 +176,7 @@ function SignUpPage() {
             이미 계정이 있으신가요?{' '}
             <Link
               to="/login"
-              className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
+              className="text-orange-600 dark:text-indigo-400 hover:text-orange-700 dark:hover:text-indigo-300 font-medium"
             >
               로그인
             </Link>

@@ -55,16 +55,16 @@ function App() {
         </button>
 
         {/* 로고 */}
-        <div className="mb-8">
+        <div className="mb-8 max-w-md mx-auto">
           <img
             src={logoLight}
             alt="MemoEat Logo"
-            className="h-32 mx-auto dark:hidden"
+            className="w-full h-auto dark:hidden"
           />
           <img
             src={logoDark}
             alt="MemoEat Logo"
-            className="h-32 mx-auto hidden dark:block"
+            className="w-full h-auto hidden dark:block"
           />
         </div>
 
