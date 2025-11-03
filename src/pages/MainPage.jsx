@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Header from '../components/common/Header'
 import Sidebar from '../components/sidebar/Sidebar'
+import TabBar from '../components/tabs/TabBar'
 import Editor from '../components/editor/Editor'
 import { getCurrentUser } from '../services/auth'
 import { getNotes, createNote, updateNote, deleteNote } from '../services/notes'
@@ -13,8 +14,8 @@ function MainPage() {
   const queryClient = useQueryClient()
   const { user, fetchUser } = useAuthStore()
 
-  const [selectedNoteId, setSelectedNoteId] = useState(null)
-  const [selectedNote, setSelectedNote] = useState(null)
+  const [openedNotes, setOpenedNotes] = useState([]) // 열린 탭들의 ID 배열
+  const [activeTabId, setActiveTabId] = useState(null) // 현재 활성 탭 ID
   const [searchQuery, setSearchQuery] = useState('')
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -54,13 +55,13 @@ function MainPage() {
     staleTime: 0
   })
 
-  // 선택된 메모 업데이트
-  useEffect(() => {
-    if (selectedNoteId) {
-      const note = notes.find((n) => n.id === selectedNoteId)
-      setSelectedNote(note || null)
-    }
-  }, [selectedNoteId, notes])
+  // 열린 탭들의 실제 메모 객체 가져오기
+  const openedNotesData = openedNotes
+    .map((noteId) => notes.find((n) => n.id === noteId))
+    .filter(Boolean) // null/undefined 제거
+
+  // 현재 활성 탭의 메모
+  const selectedNote = notes.find((n) => n.id === activeTabId) || null
 
   // 새 메모 생성
   const createNoteMutation = useMutation({
@@ -74,7 +75,9 @@ function MainPage() {
     },
     onSuccess: (newNote) => {
       queryClient.invalidateQueries(['notes'])
-      setSelectedNoteId(newNote.id)
+      // 새 메모를 탭으로 열기
+      setOpenedNotes((prev) => [...prev, newNote.id])
+      setActiveTabId(newNote.id)
     },
     onError: (error) => {
       alert(`메모 생성 실패: ${error.message}`)
@@ -117,10 +120,22 @@ function MainPage() {
     },
     onSuccess: (_, deletedNoteId) => {
       queryClient.invalidateQueries(['notes'])
-      if (selectedNoteId === deletedNoteId) {
-        setSelectedNoteId(null)
-        setSelectedNote(null)
-      }
+      // 삭제된 메모가 열린 탭에 있으면 해당 탭 닫기
+      setOpenedNotes((prev) => {
+        const newOpenedNotes = prev.filter((id) => id !== deletedNoteId)
+        // 삭제된 탭이 활성 탭이었다면 다른 탭으로 전환
+        if (activeTabId === deletedNoteId) {
+          const deletedIndex = prev.indexOf(deletedNoteId)
+          if (newOpenedNotes.length > 0) {
+            // 이전 탭 or 다음 탭으로 전환
+            const newActiveIndex = Math.max(0, deletedIndex - 1)
+            setActiveTabId(newOpenedNotes[newActiveIndex])
+          } else {
+            setActiveTabId(null)
+          }
+        }
+        return newOpenedNotes
+      })
     },
     onError: (error) => {
       alert(`메모 삭제 실패: ${error.message}`)
@@ -132,11 +147,50 @@ function MainPage() {
   }
 
   const handleNoteSelect = (noteId) => {
-    // 다른 메모 선택 시 이전 메모의 변경사항을 사이드바에 반영
-    if (selectedNoteId && selectedNoteId !== noteId) {
+    // 이미 열려있는 탭이면 해당 탭으로 전환
+    if (openedNotes.includes(noteId)) {
+      // 다른 탭으로 전환 시 현재 탭의 변경사항을 사이드바에 반영
+      if (activeTabId && activeTabId !== noteId) {
+        queryClient.invalidateQueries(['notes'])
+      }
+      setActiveTabId(noteId)
+    } else {
+      // 새 탭으로 열기
+      // 현재 활성 탭의 변경사항을 사이드바에 반영
+      if (activeTabId) {
+        queryClient.invalidateQueries(['notes'])
+      }
+      setOpenedNotes((prev) => [...prev, noteId])
+      setActiveTabId(noteId)
+    }
+  }
+
+  const handleTabChange = (noteId) => {
+    // 탭 전환 시 현재 탭의 변경사항을 사이드바에 반영
+    if (activeTabId && activeTabId !== noteId) {
       queryClient.invalidateQueries(['notes'])
     }
-    setSelectedNoteId(noteId)
+    setActiveTabId(noteId)
+  }
+
+  const handleTabClose = (noteId) => {
+    setOpenedNotes((prev) => {
+      const newOpenedNotes = prev.filter((id) => id !== noteId)
+      // 닫힌 탭이 활성 탭이었다면 다른 탭으로 전환
+      if (activeTabId === noteId) {
+        const closedIndex = prev.indexOf(noteId)
+        if (newOpenedNotes.length > 0) {
+          // 이전 탭 or 다음 탭으로 전환
+          const newActiveIndex = Math.max(0, closedIndex - 1)
+          setActiveTabId(newOpenedNotes[newActiveIndex])
+        } else {
+          setActiveTabId(null)
+        }
+      }
+      return newOpenedNotes
+    })
+    // 탭을 닫을 때 변경사항을 사이드바에 반영
+    queryClient.invalidateQueries(['notes'])
   }
 
   const handleDeleteNote = (noteId) => {
@@ -190,7 +244,7 @@ function MainPage() {
         {/* 사이드바 */}
         <Sidebar
           notes={notes}
-          selectedNoteId={selectedNoteId}
+          selectedNoteId={activeTabId}
           onNoteSelect={handleNoteSelect}
           onNewNote={handleNewNote}
           onDeleteNote={handleDeleteNote}
@@ -201,12 +255,23 @@ function MainPage() {
           onClose={handleSidebarClose}
         />
 
-        {/* 에디터 */}
-        <Editor
-          note={selectedNote}
-          onUpdateNote={handleUpdateNote}
-          onSave={handleSaveNote}
-        />
+        {/* 탭바 + 에디터 영역 */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* 탭바 */}
+          <TabBar
+            openedNotes={openedNotesData}
+            activeTabId={activeTabId}
+            onTabChange={handleTabChange}
+            onTabClose={handleTabClose}
+          />
+
+          {/* 에디터 */}
+          <Editor
+            note={selectedNote}
+            onUpdateNote={handleUpdateNote}
+            onSave={handleSaveNote}
+          />
+        </div>
       </div>
     </div>
   )

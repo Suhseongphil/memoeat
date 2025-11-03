@@ -7,15 +7,18 @@ import { toggleFavorite } from '../../services/notes'
 function Editor({ note, onUpdateNote, onSave }) {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const [isFavorite, setIsFavorite] = useState(false)
 
   // note가 변경될 때 에디터 업데이트
   useEffect(() => {
     if (note) {
       setTitle(note.data.title || '')
       setContent(note.data.content || '')
+      setIsFavorite(note.data.is_favorite || false)
     } else {
       setTitle('')
       setContent('')
+      setIsFavorite(false)
     }
   }, [note?.id]) // note.id가 변경될 때만 실행
 
@@ -50,8 +53,17 @@ function Editor({ note, onUpdateNote, onSave }) {
   const handleToggleFavorite = async () => {
     if (!note) return
 
+    // 낙관적 업데이트: UI를 즉시 변경
+    const newFavoriteState = !isFavorite
+    setIsFavorite(newFavoriteState)
+
+    // 서버에 저장
     const { note: updatedNote, error } = await toggleFavorite(note.id)
-    if (!error && updatedNote) {
+    if (error) {
+      // 에러 발생 시 원래 상태로 되돌림
+      setIsFavorite(!newFavoriteState)
+      console.error('즐겨찾기 토글 실패:', error)
+    } else if (updatedNote) {
       // 즐겨찾기는 즉시 저장되므로 onSave 호출하여 사이드바 업데이트
       await onSave(note.id, { is_favorite: updatedNote.data.is_favorite })
     }
@@ -135,12 +147,12 @@ function Editor({ note, onUpdateNote, onSave }) {
             aria-label="즐겨찾기 토글"
           >
             <svg
-              className={`w-6 h-6 ${
-                note.data.is_favorite
+              className={`w-6 h-6 transition-colors ${
+                isFavorite
                   ? 'text-yellow-500 fill-current'
                   : 'text-gray-400 dark:text-gray-600'
               }`}
-              fill={note.data.is_favorite ? 'currentColor' : 'none'}
+              fill={isFavorite ? 'currentColor' : 'none'}
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
