@@ -9,7 +9,7 @@
 
 - [o] Phase 0: 프로젝트 초기 설정 (1-2일)
 - [o] Phase 1: 인증 시스템 (3-4일)
-- [ ] Phase 2: 메모 CRUD (4-5일)
+- [o] Phase 2: 메모 CRUD (4-5일)
 - [ ] Phase 3: 폴더 관리 (3-4일)
 - [ ] Phase 4: 링크 요약 (Claude API) (4-5일)
 - [ ] Phase 5: 추가 기능 (2-3일)
@@ -100,47 +100,47 @@
 
 ### 2.1 메인 레이아웃
 
-- [ ] MainPage 레이아웃 (Header + Sidebar + Editor)
-- [ ] 반응형 디자인 (모바일 사이드바 토글)
+- [o] MainPage 레이아웃 (Header + Sidebar + Editor)
+- [o] 반응형 디자인 (모바일 사이드바 토글)
 
 ### 2.2 사이드바 UI
 
-- [ ] Header 컴포넌트
-- [ ] Sidebar 컴포넌트
-  - [ ] 새 메모 버튼
+- [o] Header 컴포넌트
+- [o] Sidebar 컴포넌트
+  - [o] 새 메모 버튼
   - [ ] 새 폴더 버튼
-  - [ ] 검색 입력 필드
-  - [ ] 즐겨찾기 필터
-- [ ] NoteList 컴포넌트 (메모 목록)
-- [ ] 빈 상태 UI
+  - [o] 검색 입력 필드
+  - [o] 즐겨찾기 필터
+- [o] NoteList 컴포넌트 (메모 목록)
+- [o] 빈 상태 UI
 
 ### 2.3 에디터 UI
 
-- [ ] CodeMirror 6 설치 및 설정
-- [ ] Editor 컴포넌트
-  - [ ] 제목 입력 필드
-  - [ ] 에디터 영역
-  - [ ] 자동 저장 상태 표시
-  - [ ] Undo/Redo 버튼
+- [o] CodeMirror 6 설치 및 설정
+- [o] Editor 컴포넌트
+  - [o] 제목 입력 필드
+  - [o] 에디터 영역
+  - [o] 자동 저장 상태 표시
+  - [o] Undo/Redo 버튼 (CodeMirror 기본 기능)
 - [ ] 링크 입력 모달 (기본 틀만)
 
 ### 2.4 메모 CRUD (JSONB 기반)
 
-- [ ] 메모 서비스 파일 (`src/services/notes.js`)
-  - [ ] `createNote` 함수
-  - [ ] `getNotes` 함수
-  - [ ] `updateNote` 함수
-  - [ ] `deleteNote` 함수
-- [ ] Create: 새 메모 생성 기능
-- [ ] Read: 메모 불러오기 기능
-- [ ] Update: 메모 수정 기능
-- [ ] Delete: 메모 삭제 기능
+- [o] 메모 서비스 파일 (`src/services/notes.js`)
+  - [o] `createNote` 함수
+  - [o] `getNotes` 함수
+  - [o] `updateNote` 함수
+  - [o] `deleteNote` 함수
+- [o] Create: 새 메모 생성 기능
+- [o] Read: 메모 불러오기 기능
+- [o] Update: 메모 수정 기능
+- [o] Delete: 메모 삭제 기능
 
 ### 2.5 자동 저장
 
-- [ ] lodash debounce 구현 (2초)
-- [ ] 저장 상태 표시 ("저장 중...", "저장됨")
-- [ ] 자동 저장 동작 확인
+- [o] lodash debounce 구현 (2초)
+- [o] 저장 상태 표시 ("저장 중...", "저장됨")
+- [o] 자동 저장 동작 확인
 
 ### ✅ Phase 2 완료 확인
 

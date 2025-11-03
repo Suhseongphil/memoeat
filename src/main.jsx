@@ -6,7 +6,7 @@ import './index.css'
 import App from './App.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import SignUpPage from './pages/SignUpPage.jsx'
-import DashboardPage from './pages/DashboardPage.jsx'
+import MainPage from './pages/MainPage.jsx'
 import AdminPage from './pages/AdminPage.jsx'
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
 
@@ -33,7 +33,7 @@ createRoot(document.getElementById('root')).render(
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <DashboardPage />
+                <MainPage />
               </ProtectedRoute>
             }
           />
