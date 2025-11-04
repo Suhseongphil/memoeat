@@ -10,7 +10,7 @@
 - [o] Phase 0: 프로젝트 초기 설정 (1-2일)
 - [o] Phase 1: 인증 시스템 (3-4일)
 - [o] Phase 2: 메모 CRUD (4-5일)
-- [ ] Phase 3: 폴더 관리 (3-4일)
+- [o] Phase 3: 폴더 관리 (3-4일)
 - [ ] Phase 4: 링크 요약 (Claude API) (4-5일)
 - [ ] Phase 5: 추가 기능 (2-3일)
 - [ ] Phase 6: UI/UX 개선 (2-3일)
@@ -154,38 +154,43 @@
 
 ### 3.1 폴더 CRUD
 
-- [ ] 폴더 서비스 파일 (`src/services/folders.js`)
-  - [ ] `createFolder` 함수
-  - [ ] `getFolders` 함수
-  - [ ] `updateFolder` 함수
-  - [ ] `deleteFolder` 함수
-  - [ ] `buildFolderTree` 함수 (트리 구조 변환)
-- [ ] FolderTree 컴포넌트 (재귀)
-- [ ] 폴더 생성 기능
-- [ ] 폴더 이름 변경 기능
-- [ ] 폴더 삭제 기능
-- [ ] 폴더 확장/축소 UI
+- [o] 폴더 서비스 파일 (`src/services/folders.js`)
+  - [o] `createFolder` 함수
+  - [o] `getFolders` 함수
+  - [o] `updateFolder` 함수
+  - [o] `deleteFolder` 함수
+  - [o] `buildFolderTree` 함수 (트리 구조 변환)
+  - [o] `reorderFolders` 함수 (순서 변경)
+- [o] FolderTree 컴포넌트 (재귀)
+- [o] 폴더 생성 기능
+- [o] 폴더 이름 변경 기능
+- [o] 폴더 삭제 기능
+- [o] 폴더 확장/축소 UI
 
 ### 3.2 드래그 앤 드롭
 
-- [ ] @dnd-kit 설정 (DndContext)
-- [ ] 메모를 폴더로 드래그 기능
-- [ ] 폴더를 다른 폴더로 드래그 기능
-- [ ] 드래그 중 시각적 피드백
-- [ ] 순환 참조 방지 로직
+- [o] HTML5 Native Drag & Drop API 구현 (dnd-kit 대신)
+- [o] 메모를 폴더로 드래그 기능
+- [o] 폴더를 다른 폴더로 드래그 기능
+- [o] 메모/폴더 순서 변경 (같은 레벨에서 드래그)
+- [o] 드래그 중 시각적 피드백 (before/after/inside)
+- [o] 순환 참조 방지 로직
+- [o] 성능 최적화 (dragOver 이벤트 로그 제거)
 
 ### 3.3 폴더 구조 최적화
 
-- [ ] 폴더 순서 저장 (`order` 필드)
-- [ ] localStorage에 폴더 확장 상태 저장
-- [ ] 캐싱 및 리렌더링 최적화
+- [o] 폴더 순서 저장 (`order` 필드)
+- [o] 메모 순서 저장 (`order` 필드)
+- [ ] localStorage에 폴더 확장 상태 저장 (미구현)
+- [o] React Query 캐싱 및 리렌더링 최적화
 
 ### ✅ Phase 3 완료 확인
 
-- [ ] 폴더 생성/이름 변경/삭제 동작
-- [ ] 드래그 앤 드롭 동작
-- [ ] 폴더 클릭 시 해당 폴더의 메모만 표시
-- [ ] 순환 참조 방지 확인
+- [o] 폴더 생성/이름 변경/삭제 동작
+- [o] 드래그 앤 드롭 동작
+- [o] 폴더 클릭 시 해당 폴더의 메모만 표시
+- [o] 순환 참조 방지 확인
+- [o] 메모/폴더 순서 변경 및 지속성 확인
 
 ---
 
@@ -526,7 +531,8 @@
 
 ### MVP (Minimum Viable Product)
 
-- [x] Phase 0~4 완료
+- [o] Phase 0~3 완료
+- [ ] Phase 4 완료 (링크 요약)
 - [ ] 핵심 기능 동작 (인증, 메모, 폴더, 링크 요약)
 
 ### v1.0 정식 출시
@@ -569,4 +575,4 @@
 
 ---
 
-**마지막 업데이트**: 2025-11-02
+**마지막 업데이트**: 2025-11-04
