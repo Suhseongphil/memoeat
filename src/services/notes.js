@@ -10,6 +10,25 @@ export const createNote = async (userId, noteData = {}) => {
   try {
     const now = new Date().toISOString()
 
+    // 같은 폴더 내 메모들의 최대 order 값 찾기 (직접 쿼리)
+    const folderId = noteData.folder_id || null
+    let query = supabase
+      .from('notes')
+      .select('data')
+      .eq('user_id', userId)
+
+    if (folderId === null) {
+      query = query.is('data->folder_id', null)
+    } else {
+      query = query.eq('data->folder_id', folderId)
+    }
+
+    const { data: existingNotes, error: queryError } = await query
+
+    const maxOrder = existingNotes && existingNotes.length > 0
+      ? Math.max(...existingNotes.map(n => n.data?.order || 0))
+      : -1
+
     const data = {
       title: noteData.title || '제목 없음',
       content: noteData.content || '',
@@ -17,6 +36,7 @@ export const createNote = async (userId, noteData = {}) => {
       link_url: noteData.link_url || null,
       link_type: noteData.link_type || null,
       is_favorite: noteData.is_favorite || false,
+      order: noteData.order !== undefined ? noteData.order : maxOrder + 1,
       created_at: now,
       updated_at: now
     }
@@ -70,7 +90,8 @@ export const getNotes = async (userId, filters = {}) => {
       )
     }
 
-    // 정렬 (최근 수정 순)
+    // 정렬 (order 순서대로, order가 같으면 최근 수정 순)
+    query = query.order('data->order', { ascending: true })
     query = query.order('updated_at', { ascending: false })
 
     const { data: notes, error } = await query
@@ -197,5 +218,98 @@ export const toggleFavorite = async (noteId) => {
   } catch (error) {
     console.error('ToggleFavorite error:', error)
     return { note: null, error: error.message }
+  }
+}
+
+/**
+ * 메모 순서 변경
+ * @param {string} noteId - 이동할 메모 ID
+ * @param {string} targetNoteId - 타겟 메모 ID
+ * @param {string} position - 'before' | 'after'
+ * @param {Array} allNotes - 모든 메모 배열
+ */
+export const reorderNotes = async (noteId, targetNoteId, position, allNotes) => {
+  try {
+    console.log('🔄 [reorderNotes] 시작:', { noteId, targetNoteId, position })
+
+    const draggedNote = allNotes.find(n => n.id === noteId)
+    const targetNote = allNotes.find(n => n.id === targetNoteId)
+
+    console.log('🔄 [reorderNotes] 찾은 메모:', {
+      draggedNote: draggedNote?.data?.title,
+      targetNote: targetNote?.data?.title
+    })
+
+    if (!draggedNote || !targetNote) {
+      console.error('❌ [reorderNotes] 메모를 찾을 수 없음')
+      return { success: false, error: '메모를 찾을 수 없습니다' }
+    }
+
+    // 같은 폴더에 속한 메모들만 필터링
+    const folderId = targetNote.data.folder_id
+    const siblings = allNotes
+      .filter(n => n.data.folder_id === folderId && n.id !== noteId)
+      .sort((a, b) => (a.data.order || 0) - (b.data.order || 0))
+
+    console.log('🔄 [reorderNotes] 같은 폴더의 형제 메모들:',
+      siblings.map(n => ({ id: n.id, title: n.data?.title, order: n.data?.order }))
+    )
+
+    // 타겟의 인덱스 찾기
+    const targetIndex = siblings.findIndex(n => n.id === targetNoteId)
+    console.log('🔄 [reorderNotes] 타겟 인덱스:', targetIndex)
+
+    // 새로운 순서 계산
+    const insertIndex = position === 'before' ? targetIndex : targetIndex + 1
+    console.log('🔄 [reorderNotes] 삽입 인덱스:', insertIndex, '(position:', position, ')')
+
+    siblings.splice(insertIndex, 0, draggedNote)
+    console.log('🔄 [reorderNotes] 재정렬 후:',
+      siblings.map((n, i) => ({ index: i, id: n.id, title: n.data?.title }))
+    )
+
+    // order 값 재할당
+    const updates = []
+    for (let i = 0; i < siblings.length; i++) {
+      const note = siblings[i]
+      const newOrder = i
+
+      if (note.data.order !== newOrder || note.id === noteId) {
+        const updatedData = {
+          ...note.data,
+          order: newOrder,
+          folder_id: folderId, // 드래그한 메모의 folder_id도 업데이트
+          updated_at: new Date().toISOString()
+        }
+
+        console.log('🔄 [reorderNotes] 업데이트:', {
+          id: note.id,
+          title: note.data?.title,
+          oldOrder: note.data.order,
+          newOrder
+        })
+
+        updates.push(
+          supabase
+            .from('notes')
+            .update({
+              data: updatedData,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', note.id)
+        )
+      }
+    }
+
+    console.log('🔄 [reorderNotes] 총 업데이트 개수:', updates.length)
+
+    // 모든 업데이트 실행
+    await Promise.all(updates)
+
+    console.log('✅ [reorderNotes] 완료!')
+    return { success: true, error: null }
+  } catch (error) {
+    console.error('❌ [reorderNotes] 오류:', error)
+    return { success: false, error: error.message }
   }
 }

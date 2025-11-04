@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase, customStorage } from './supabase'
 
 /**
  * 회원가입 함수
@@ -66,7 +66,11 @@ export const signUp = async (email, password) => {
  */
 export const signIn = async (email, password, rememberMe = false) => {
   try {
-    // 1. Supabase Auth 로그인
+    // 1. 로그인 상태 유지 설정 (로그인 전에 설정)
+    // rememberMe가 true면 localStorage (영구), false면 sessionStorage (브라우저 종료 시 삭제)
+    customStorage.setStorageType(rememberMe ? 'local' : 'session')
+
+    // 2. Supabase Auth 로그인
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -74,7 +78,7 @@ export const signIn = async (email, password, rememberMe = false) => {
 
     if (authError) throw authError
 
-    // 2. 승인 여부 확인
+    // 3. 승인 여부 확인
     const { data: approvalData, error: approvalError } = await supabase
       .from('user_approvals')
       .select('is_approved, approved_at')
@@ -83,16 +87,10 @@ export const signIn = async (email, password, rememberMe = false) => {
 
     if (approvalError) throw approvalError
 
-    // 3. 승인되지 않은 경우 로그아웃 처리
+    // 4. 승인되지 않은 경우 로그아웃 처리
     if (!approvalData.is_approved) {
       await supabase.auth.signOut()
       throw new Error('관리자 승인 대기 중입니다. 승인 후 다시 로그인해주세요.')
-    }
-
-    // 4. 로그인 상태 유지 설정
-    if (!rememberMe) {
-      // rememberMe가 false인 경우, 세션을 localStorage가 아닌 sessionStorage에 저장
-      // Supabase는 기본적으로 localStorage를 사용하므로, 필요시 추가 로직 구현
     }
 
     return {

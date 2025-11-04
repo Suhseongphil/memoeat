@@ -41,8 +41,7 @@ function LoginPage() {
       }
 
       if (isApproved) {
-        // 승인된 사용자는 메인 페이지로 이동 (추후 대시보드로 변경)
-        alert('로그인 성공!')
+        // 승인된 사용자는 대시보드로 이동
         navigate('/dashboard')
       }
     } catch (err) {

@@ -1,24 +1,168 @@
-import { useState } from 'react'
-import NoteList from './NoteList'
+import { useState, useRef, useEffect } from 'react'
+import FolderTree from './FolderTree'
+import { NoteItemSimple, currentDraggedItem } from './NoteList'
 
-function Sidebar({
+// 루트 드롭존 컴포넌트
+function RootDropZone({ userName, onDrop, notes }) {
+  const [isOver, setIsOver] = useState(false)
+  const [canDrop, setCanDrop] = useState(false)
+
+  // HTML5 Drag & Drop - 드래그 오버
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    // 전역 변수에서 드래그 중인 아이템 가져오기
+    const item = currentDraggedItem
+
+    if (!item) {
+      e.dataTransfer.dropEffect = 'move'
+      setCanDrop(true)
+      return
+    }
+
+    // 이미 메인 폴더에 있는 항목은 드롭 불가
+    let canDropItem = true
+    if (item.type === 'NOTE') {
+      const note = notes.find(n => n.id === item.id)
+      canDropItem = note && note.data.folder_id !== null
+    }
+    if (item.type === 'FOLDER') {
+      canDropItem = item.data.parent_id !== null
+    }
+
+    setCanDrop(canDropItem)
+    e.dataTransfer.dropEffect = canDropItem ? 'move' : 'none'
+  }
+
+  // HTML5 Drag & Drop - 드래그 진입
+  const handleDragEnter = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsOver(true)
+  }
+
+  // HTML5 Drag & Drop - 드래그 나감
+  const handleDragLeave = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.currentTarget.contains(e.relatedTarget)) {
+      return
+    }
+    setIsOver(false)
+    setCanDrop(false)
+  }
+
+  // HTML5 Drag & Drop - 드롭
+  const handleDrop = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsOver(false)
+    setCanDrop(false)
+
+    try {
+      const data = e.dataTransfer.getData('application/json')
+      if (!data) return
+
+      const item = JSON.parse(data)
+      console.log('✅ 루트로 드롭:', item)
+      onDrop(item)
+    } catch (err) {
+      console.error('루트 드롭 처리 오류:', err)
+    }
+  }
+
+  const isActive = isOver && canDrop
+
+  return (
+    <div className="p-4 pb-3">
+      <div
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`flex items-center px-5 py-4 text-base font-bold rounded-xl transition-all duration-200 ${
+          isActive
+            ? 'ring-4 ring-orange-500 dark:ring-indigo-500 bg-orange-100 dark:bg-indigo-900/40 scale-[1.05] shadow-2xl'
+            : canDrop
+            ? 'ring-2 ring-orange-300 dark:ring-indigo-600 bg-orange-50 dark:bg-indigo-900/20'
+            : 'bg-gray-100 dark:bg-gray-700/70 hover:bg-gray-200 dark:hover:bg-gray-700'
+        } text-gray-800 dark:text-gray-200 cursor-pointer`}
+        style={{
+          minHeight: '56px'
+        }}
+      >
+        <svg
+          className={`w-6 h-6 mr-3 transition-all duration-200 ${
+            isActive ? 'text-orange-600 dark:text-indigo-400 scale-110' : 'text-gray-600 dark:text-gray-400'
+          }`}
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
+          <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+        </svg>
+        <span className="flex-1 text-base">{userName}</span>
+        {isActive && (
+          <svg
+            className="w-5 h-5 text-orange-600 dark:text-indigo-400 animate-bounce"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        )}
+      </div>
+
+      {/* 드롭존 설명 텍스트 */}
+      {isActive && (
+        <div className="mt-3 mx-2 px-3 py-2 bg-orange-50 dark:bg-indigo-900/20 border border-orange-300 dark:border-indigo-600 rounded-lg text-sm text-orange-700 dark:text-indigo-300 font-semibold text-center animate-pulse">
+          ↓ 메인 폴더로 이동 ↓
+        </div>
+      )}
+
+      {/* 드래그 가능할 때 힌트 표시 */}
+      {canDrop && !isActive && (
+        <div className="mt-2 px-3 text-xs text-gray-500 dark:text-gray-400 text-center">
+          💡 {userName} 폴더로 드래그하면 메인 폴더로 이동
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SidebarContent({
   notes,
   selectedNoteId,
   onNoteSelect,
   onNewNote,
   onDeleteNote,
-  onSearch,
-  onToggleFavoriteFilter,
-  showFavoritesOnly,
+  onRenameNote,
+  folders,
+  selectedFolderId,
+  onFolderSelect,
+  onNewFolder,
+  onRenameFolder,
+  onDeleteFolder,
+  onMoveNote,
+  onMoveFolder,
+  onReorderNote,
+  onReorderFolder,
   isOpen,
-  onClose
+  onClose,
+  userName,
+  sidebarPosition = 'left'
 }) {
-  const [searchQuery, setSearchQuery] = useState('')
+  const [showContextMenu, setShowContextMenu] = useState(false)
+  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 })
+  const menuRef = useRef(null)
 
-  const handleSearchChange = (e) => {
-    const query = e.target.value
-    setSearchQuery(query)
-    onSearch(query)
+  const handleNoteSelect = (noteId) => {
+    onNoteSelect(noteId)
+    // 모바일에서는 메모 선택 후 사이드바 닫기
+    if (window.innerWidth < 1024) {
+      onClose?.()
+    }
   }
 
   const handleNewNote = () => {
@@ -28,6 +172,55 @@ function Sidebar({
       onClose?.()
     }
   }
+
+  const handleRootDrop = (item) => {
+    console.log('메인 폴더로 이동:', item)
+    if (item.type === 'NOTE') {
+      onMoveNote(item.id, null)
+    } else if (item.type === 'FOLDER') {
+      onMoveFolder(item.id, null)
+    }
+  }
+
+  // 사이드바 우클릭 메뉴
+  const handleSidebarContextMenu = (e) => {
+    // 폴더나 메모를 우클릭한 경우가 아닐 때만 사이드바 메뉴 표시
+    const target = e.target
+    if (target.closest('[data-folder-item]') || target.closest('[data-note-item]')) {
+      return
+    }
+
+    e.preventDefault()
+    e.stopPropagation()
+    setMenuPosition({ x: e.clientX, y: e.clientY })
+    setShowContextMenu(true)
+  }
+
+  // 외부 클릭 시 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowContextMenu(false)
+      }
+    }
+
+    if (showContextMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showContextMenu])
+
+  // 새 폴더 생성
+  const handleCreateFolder = () => {
+    onNewFolder(null) // 루트 레벨 폴더 생성
+    setShowContextMenu(false)
+  }
+
+  // 폴더에 속하지 않은 메모들 (루트 메모)
+  const rootNotes = notes.filter(note => !note.data.folder_id)
 
   return (
     <>
@@ -43,7 +236,8 @@ function Sidebar({
       <aside
         className={`
           fixed lg:static inset-y-0 left-0 z-50
-          w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700
+          w-80 bg-white dark:bg-gray-800
+          ${sidebarPosition === 'left' ? 'border-r' : 'border-l'} border-gray-200 dark:border-gray-700
           flex flex-col transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
@@ -52,7 +246,7 @@ function Sidebar({
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-              내 메모
+              탐색기
             </h2>
             {/* 모바일 닫기 버튼 */}
             <button
@@ -98,76 +292,87 @@ function Sidebar({
           </button>
         </div>
 
-        {/* 검색 및 필터 */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 space-y-3">
-          {/* 검색 입력 */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="메모 검색..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 dark:focus:ring-indigo-500"
-            />
-            <svg
-              className="absolute left-3 top-2.5 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
-
-          {/* 즐겨찾기 필터 버튼 */}
-          <button
-            onClick={onToggleFavoriteFilter}
-            className={`w-full flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors ${
-              showFavoritesOnly
-                ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-2 border-yellow-500'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            <svg
-              className={`w-5 h-5 mr-2 ${showFavoritesOnly ? 'fill-current' : ''}`}
-              fill={showFavoritesOnly ? 'currentColor' : 'none'}
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-              />
-            </svg>
-            {showFavoritesOnly ? '즐겨찾기 필터 ON' : '즐겨찾기만 보기'}
-          </button>
-        </div>
-
-        {/* 메모 목록 */}
-        <div className="flex-1 overflow-y-auto">
-          <NoteList
+        {/* 폴더 트리 + 메모 리스트 */}
+        <div
+          className="flex-1 overflow-y-auto relative"
+          onContextMenu={handleSidebarContextMenu}
+        >
+          {/* 루트 폴더 (사용자 이름) - 메인 폴더 드롭존 */}
+          <RootDropZone
+            userName={userName}
+            onDrop={handleRootDrop}
             notes={notes}
-            selectedNoteId={selectedNoteId}
-            onNoteSelect={(noteId) => {
-              onNoteSelect(noteId)
-              // 모바일에서는 메모 선택 후 사이드바 닫기
-              if (window.innerWidth < 1024) {
-                onClose?.()
-              }
-            }}
-            onDeleteNote={onDeleteNote}
           />
+
+          {/* 폴더 트리 */}
+          {folders && folders.length > 0 && (
+            <div className="px-2">
+              <FolderTree
+                folders={folders}
+                selectedFolderId={selectedFolderId}
+                onFolderSelect={onFolderSelect}
+                onRenameFolder={onRenameFolder}
+                onDeleteFolder={onDeleteFolder}
+                onCreateFolder={onNewFolder}
+                notes={notes}
+                selectedNoteId={selectedNoteId}
+                onNoteSelect={handleNoteSelect}
+                onDeleteNote={onDeleteNote}
+                onRenameNote={onRenameNote}
+                onMoveNote={onMoveNote}
+                onMoveFolder={onMoveFolder}
+                onReorderNote={onReorderNote}
+                onReorderFolder={onReorderFolder}
+                level={1}
+              />
+            </div>
+          )}
+
+          {/* 루트 레벨 메모들 */}
+          {rootNotes.length > 0 && (
+            <div className="px-2">
+              {rootNotes.map((note) => (
+                <NoteItemSimple
+                  key={note.id}
+                  note={note}
+                  selectedNoteId={selectedNoteId}
+                  onNoteSelect={handleNoteSelect}
+                  onDeleteNote={onDeleteNote}
+                  onRenameNote={onRenameNote}
+                  onMoveNote={onMoveNote}
+                  onReorderNote={onReorderNote}
+                  level={1}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* 사이드바 우클릭 메뉴 */}
+          {showContextMenu && (
+            <div
+              ref={menuRef}
+              className="fixed z-50 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1"
+              style={{
+                top: `${menuPosition.y}px`,
+                left: `${menuPosition.x}px`
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={handleCreateFolder}
+                className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                새 폴더
+              </button>
+            </div>
+          )}
         </div>
       </aside>
     </>
   )
 }
 
-export default Sidebar
+export default SidebarContent

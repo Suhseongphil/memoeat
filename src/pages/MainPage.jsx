@@ -6,19 +6,25 @@ import Sidebar from '../components/sidebar/Sidebar'
 import TabBar from '../components/tabs/TabBar'
 import Editor from '../components/editor/Editor'
 import { getCurrentUser } from '../services/auth'
-import { getNotes, createNote, updateNote, deleteNote } from '../services/notes'
+import { getNotes, createNote, updateNote, deleteNote, reorderNotes } from '../services/notes'
+import { getFolders, createFolder, updateFolder, deleteFolder, buildFolderTree, reorderFolders } from '../services/folders'
 import { useAuthStore } from '../stores/authStore'
 
 function MainPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { user, fetchUser } = useAuthStore()
+  const { user, fetchUser, preferences, loading } = useAuthStore()
 
   const [openedNotes, setOpenedNotes] = useState([]) // 열린 탭들의 ID 배열
   const [activeTabId, setActiveTabId] = useState(null) // 현재 활성 탭 ID
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+  const [selectedFolderId, setSelectedFolderId] = useState(null) // 선택된 폴더 ID
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // 사용자 이름 추출 (이메일의 @ 앞부분)
+  const userName = user?.email ? user.email.split('@')[0] : 'User'
+
+  // 사이드바 위치 결정
+  const sidebarPosition = preferences?.sidebarPosition || 'left'
 
   // 사용자 인증 확인
   useEffect(() => {
@@ -33,22 +39,38 @@ function MainPage() {
     checkAuth()
   }, [])
 
-  // 메모 목록 가져오기
-  const { data: notes = [], isLoading: notesLoading } = useQuery({
-    queryKey: ['notes', user?.id, searchQuery, showFavoritesOnly],
+  // 폴더 목록 가져오기
+  const { data: foldersData = [], isLoading: foldersLoading } = useQuery({
+    queryKey: ['folders', user?.id],
     queryFn: async () => {
       if (!user?.id) return []
 
-      const filters = {
-        searchQuery: searchQuery || undefined,
-        isFavorite: showFavoritesOnly || undefined
+      const { folders, error } = await getFolders(user.id)
+      if (error) {
+        console.error('폴더 로딩 오류:', error)
+        return []
       }
+      return folders
+    },
+    enabled: !!user?.id,
+    staleTime: 0
+  })
 
-      const { notes, error } = await getNotes(user.id, filters)
+  // 폴더 트리 구조 생성
+  const folderTree = buildFolderTree(foldersData)
+
+  // 메모 목록 가져오기
+  const { data: notes = [], isLoading: notesLoading } = useQuery({
+    queryKey: ['notes', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return []
+
+      const { notes, error } = await getNotes(user.id, {})
       if (error) {
         console.error('메모 로딩 오류:', error)
         return []
       }
+
       return notes
     },
     enabled: !!user?.id,
@@ -142,8 +164,77 @@ function MainPage() {
     }
   })
 
+  // 폴더 생성
+  const createFolderMutation = useMutation({
+    mutationFn: async (parentId = null) => {
+      const { folder, error } = await createFolder(user.id, {
+        name: '새 폴더',
+        parent_id: parentId
+      })
+      if (error) throw new Error(error)
+      return folder
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['folders'])
+    },
+    onError: (error) => {
+      alert(`폴더 생성 실패: ${error.message}`)
+    }
+  })
+
+  // 폴더 이름 변경
+  const renameFolderMutation = useMutation({
+    mutationFn: async ({ folderId, name }) => {
+      const { folder, error } = await updateFolder(folderId, { name })
+      if (error) throw new Error(error)
+      return folder
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['folders'])
+    },
+    onError: (error) => {
+      alert(`폴더 이름 변경 실패: ${error.message}`)
+    }
+  })
+
+  // 폴더 삭제
+  const deleteFolderMutation = useMutation({
+    mutationFn: async (folderId) => {
+      const { success, error} = await deleteFolder(folderId)
+      if (error) throw new Error(error)
+      return success
+    },
+    onSuccess: (_, deletedFolderId) => {
+      queryClient.invalidateQueries(['folders'])
+      // 삭제된 폴더가 선택되어 있었다면 선택 해제
+      if (selectedFolderId === deletedFolderId) {
+        setSelectedFolderId(null)
+      }
+    },
+    onError: (error) => {
+      alert(`폴더 삭제 실패: ${error.message}`)
+    }
+  })
+
   const handleNewNote = () => {
     createNoteMutation.mutate()
+  }
+
+  const handleNewFolder = (parentId = null) => {
+    createFolderMutation.mutate(parentId)
+  }
+
+  const handleFolderSelect = (folderId) => {
+    // 같은 폴더 클릭 시 필터 해제
+    setSelectedFolderId(folderId === selectedFolderId ? null : folderId)
+  }
+
+  const handleRenameFolder = (folderId, name) => {
+    renameFolderMutation.mutate({ folderId, name })
+  }
+
+  const handleDeleteFolder = (folderId) => {
+    deleteFolderMutation.mutate(folderId)
   }
 
   const handleNoteSelect = (noteId) => {
@@ -197,6 +288,15 @@ function MainPage() {
     deleteNoteMutation.mutate(noteId)
   }
 
+  const handleRenameNote = async (noteId, newTitle) => {
+    const { note, error } = await updateNote(noteId, { title: newTitle })
+    if (error) {
+      alert(`제목 변경 실패: ${error}`)
+    } else {
+      queryClient.invalidateQueries(['notes'])
+    }
+  }
+
   const handleUpdateNote = (updates) => {
     // 에디터 내부 로컬 상태만 업데이트 (사이드바는 변경 안됨)
     // 실제 저장은 handleSaveNote에서만 수행
@@ -207,14 +307,6 @@ function MainPage() {
     await updateNoteMutation.mutateAsync({ noteId, updates })
   }
 
-  const handleSearch = (query) => {
-    setSearchQuery(query)
-  }
-
-  const handleToggleFavoriteFilter = () => {
-    setShowFavoritesOnly(!showFavoritesOnly)
-  }
-
   const handleMenuToggle = () => {
     setSidebarOpen(!sidebarOpen)
   }
@@ -223,7 +315,58 @@ function MainPage() {
     setSidebarOpen(false)
   }
 
-  if (!user) {
+  // 메모를 다른 폴더로 이동
+  const handleMoveNote = async (noteId, targetFolderId) => {
+    const { note, error } = await updateNote(noteId, { folder_id: targetFolderId })
+    if (error) {
+      alert(`메모 이동 실패: ${error}`)
+    } else {
+      queryClient.invalidateQueries(['notes'])
+    }
+  }
+
+  // 폴더를 다른 폴더로 이동
+  const handleMoveFolder = async (folderId, targetParentId) => {
+    // 순환 참조 방지
+    const { isCircularReference } = await import('../services/folders')
+    if (isCircularReference(folderId, targetParentId, foldersData)) {
+      alert('폴더를 자기 자신이나 하위 폴더로 이동할 수 없습니다.')
+      return
+    }
+
+    const { folder, error } = await updateFolder(folderId, { parent_id: targetParentId })
+    if (error) {
+      alert(`폴더 이동 실패: ${error}`)
+    } else {
+      queryClient.invalidateQueries(['folders'])
+    }
+  }
+
+  // 메모 순서 변경
+  const handleReorderNote = async (noteId, targetNoteId, position) => {
+    console.log('🔷 [MainPage] handleReorderNote 호출:', { noteId, targetNoteId, position })
+    const { success, error } = await reorderNotes(noteId, targetNoteId, position, notes)
+    if (error) {
+      console.error('❌ [MainPage] 메모 순서 변경 실패:', error)
+    } else {
+      console.log('✅ [MainPage] 메모 순서 변경 성공, 쿼리 무효화')
+      queryClient.invalidateQueries(['notes'])
+    }
+  }
+
+  // 폴더 순서 변경
+  const handleReorderFolder = async (folderId, targetFolderId, position) => {
+    console.log('🔷 [MainPage] handleReorderFolder 호출:', { folderId, targetFolderId, position })
+    const { success, error } = await reorderFolders(folderId, targetFolderId, position, foldersData)
+    if (error) {
+      console.error('❌ [MainPage] 폴더 순서 변경 실패:', error)
+    } else {
+      console.log('✅ [MainPage] 폴더 순서 변경 성공, 쿼리 무효화')
+      queryClient.invalidateQueries(['folders'])
+    }
+  }
+
+  if (loading || !user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
         <div className="text-center">
@@ -240,7 +383,7 @@ function MainPage() {
       <Header onMenuToggle={handleMenuToggle} />
 
       {/* 메인 컨텐츠 영역 */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className={`flex-1 flex overflow-hidden ${sidebarPosition === 'right' ? 'flex-row-reverse' : ''}`}>
         {/* 사이드바 */}
         <Sidebar
           notes={notes}
@@ -248,11 +391,21 @@ function MainPage() {
           onNoteSelect={handleNoteSelect}
           onNewNote={handleNewNote}
           onDeleteNote={handleDeleteNote}
-          onSearch={handleSearch}
-          onToggleFavoriteFilter={handleToggleFavoriteFilter}
-          showFavoritesOnly={showFavoritesOnly}
+          onRenameNote={handleRenameNote}
+          folders={folderTree}
+          selectedFolderId={selectedFolderId}
+          onFolderSelect={handleFolderSelect}
+          onNewFolder={handleNewFolder}
+          onRenameFolder={handleRenameFolder}
+          onDeleteFolder={handleDeleteFolder}
+          onMoveNote={handleMoveNote}
+          onMoveFolder={handleMoveFolder}
+          onReorderNote={handleReorderNote}
+          onReorderFolder={handleReorderFolder}
           isOpen={sidebarOpen}
           onClose={handleSidebarClose}
+          userName={userName}
+          sidebarPosition={sidebarPosition}
         />
 
         {/* 탭바 + 에디터 영역 */}
@@ -270,6 +423,7 @@ function MainPage() {
             note={selectedNote}
             onUpdateNote={handleUpdateNote}
             onSave={handleSaveNote}
+            onDeleteNote={handleDeleteNote}
           />
         </div>
       </div>

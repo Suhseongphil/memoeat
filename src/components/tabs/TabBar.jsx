@@ -26,7 +26,7 @@ function TabBar({ openedNotes, activeTabId, onTabChange, onTabClose }) {
               key={note.id}
               onClick={() => handleTabClick(note.id)}
               className={`
-                flex items-center space-x-2 px-4 py-2.5 border-r border-gray-200 dark:border-gray-700
+                flex items-center space-x-6 pl-4 pr-2 py-2.5 border-r border-gray-200 dark:border-gray-700
                 cursor-pointer transition-colors min-w-0 max-w-xs group
                 ${
                   isActive

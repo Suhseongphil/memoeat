@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { signOut } from '../../services/auth'
 import { useAuthStore } from '../../stores/authStore'
@@ -7,28 +7,12 @@ import logoDark from '../../assets/images/memoeat_logo_notepad_dark_v2.svg'
 
 function Header({ onMenuToggle, showMenuButton = true }) {
   const navigate = useNavigate()
-  const { user } = useAuthStore()
+  const { user, preferences, updatePreferences } = useAuthStore()
   const adminEmail = import.meta.env.VITE_ADMIN_EMAIL
   const isAdmin = user?.email === adminEmail
 
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [isDark, setIsDark] = useState(() => {
-    return localStorage.getItem('darkMode') === 'true'
-  })
   const settingsRef = useRef(null)
-
-  // 다크모드 토글
-  const toggleDarkMode = () => {
-    const newDarkMode = !isDark
-    setIsDark(newDarkMode)
-    localStorage.setItem('darkMode', newDarkMode.toString())
-
-    if (newDarkMode) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }
 
   // 외부 클릭 시 설정 메뉴 닫기
   useEffect(() => {
@@ -51,6 +35,24 @@ function Header({ onMenuToggle, showMenuButton = true }) {
     const { error } = await signOut()
     if (!error) {
       navigate('/')
+    }
+  }
+
+  const handleThemeToggle = async () => {
+    try {
+      const newTheme = preferences?.theme === 'dark' ? 'light' : 'dark'
+      await updatePreferences({ theme: newTheme })
+    } catch (error) {
+      alert(`테마 변경 실패: ${error.message}`)
+    }
+  }
+
+  const handleSidebarPositionToggle = async () => {
+    try {
+      const newPosition = preferences?.sidebarPosition === 'right' ? 'left' : 'right'
+      await updatePreferences({ sidebarPosition: newPosition })
+    } catch (error) {
+      alert(`사이드바 위치 변경 실패: ${error.message}`)
     }
   }
 
@@ -156,14 +158,14 @@ function Header({ onMenuToggle, showMenuButton = true }) {
 
             {/* 설정 드롭다운 */}
             {settingsOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
+              <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-[100]">
                 {/* 다크모드 토글 */}
                 <button
-                  onClick={toggleDarkMode}
-                  className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  onClick={handleThemeToggle}
+                  className="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <span className="flex items-center">
-                    {isDark ? (
+                    {preferences?.theme === 'dark' ? (
                       <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
                       </svg>
@@ -176,22 +178,42 @@ function Header({ onMenuToggle, showMenuButton = true }) {
                         />
                       </svg>
                     )}
-                    {isDark ? '다크모드' : '라이트모드'}
+                    {preferences?.theme === 'dark' ? '다크모드' : '라이트모드'}
                   </span>
                   <div className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
-                    isDark ? 'bg-indigo-500' : 'bg-gray-300'
+                    preferences?.theme === 'dark' ? 'bg-indigo-500' : 'bg-gray-300'
                   }`}>
                     <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                      isDark ? 'translate-x-5' : 'translate-x-0'
+                      preferences?.theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
+                  </div>
+                </button>
+
+                {/* 사이드바 위치 토글 */}
+                <button
+                  onClick={handleSidebarPositionToggle}
+                  className="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <span className="flex items-center">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    사이드바 {preferences?.sidebarPosition === 'right' ? '오른쪽' : '왼쪽'}
+                  </span>
+                  <div className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
+                    preferences?.sidebarPosition === 'right' ? 'bg-indigo-500' : 'bg-gray-300'
+                  }`}>
+                    <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                      preferences?.sidebarPosition === 'right' ? 'translate-x-5' : 'translate-x-0'
                     }`} />
                   </div>
                 </button>
 
                 <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
 
-                {/* 추가 설정 항목 (Phase 5+에서 구현) */}
-                <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-500">
-                  추가 설정은 향후 업데이트 예정
+                {/* 설정 안내 */}
+                <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400">
+                  설정은 자동으로 저장되며 모든 기기에서 동기화됩니다.
                 </div>
               </div>
             )}

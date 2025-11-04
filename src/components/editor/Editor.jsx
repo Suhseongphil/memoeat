@@ -4,7 +4,7 @@ import { markdown } from '@codemirror/lang-markdown'
 import { debounce } from 'lodash'
 import { toggleFavorite } from '../../services/notes'
 
-function Editor({ note, onUpdateNote, onSave }) {
+function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [isFavorite, setIsFavorite] = useState(false)
@@ -66,6 +66,15 @@ function Editor({ note, onUpdateNote, onSave }) {
     } else if (updatedNote) {
       // 즐겨찾기는 즉시 저장되므로 onSave 호출하여 사이드바 업데이트
       await onSave(note.id, { is_favorite: updatedNote.data.is_favorite })
+    }
+  }
+
+  // 메모 삭제
+  const handleDelete = () => {
+    if (!note) return
+
+    if (confirm('이 메모를 삭제하시겠습니까?')) {
+      onDeleteNote(note.id)
     }
   }
 
@@ -172,6 +181,26 @@ function Editor({ note, onUpdateNote, onSave }) {
             placeholder="제목을 입력하세요"
             className="flex-1 text-2xl font-bold bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600"
           />
+          {/* 삭제 버튼 (제목 오른쪽) */}
+          <button
+            onClick={handleDelete}
+            className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0"
+            aria-label="메모 삭제"
+          >
+            <svg
+              className="w-6 h-6 text-gray-400 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+          </button>
         </div>
       </div>
 

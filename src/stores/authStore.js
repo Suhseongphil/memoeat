@@ -1,16 +1,21 @@
 import { create } from 'zustand'
 import { getCurrentUser } from '../services/auth'
+import { getUserPreferences, updateUserPreferences } from '../services/preferences'
 
 /**
  * 인증 상태 관리를 위한 Zustand 스토어
  */
-export const useAuthStore = create((set) => ({
+export const useAuthStore = create((set, get) => ({
   // 상태
   user: null,
   session: null,
   isApproved: false,
   loading: true,
   error: null,
+  preferences: {
+    theme: 'light',
+    sidebarPosition: 'left'
+  },
 
   // 액션: 사용자 정보 설정
   setUser: (user, session, isApproved) => set({
@@ -48,12 +53,61 @@ export const useAuthStore = create((set) => ({
         return { success: false, error }
       }
 
-      set({ user, session, isApproved, loading: false, error: null })
+      // 사용자 설정 불러오기 (loading 상태를 false로 변경하기 전에)
+      let userPreferences = { theme: 'light', sidebarPosition: 'left' }
+      if (user) {
+        const { preferences } = await getUserPreferences(user.id)
+        userPreferences = preferences
+
+        // 다크모드 적용
+        if (preferences.theme === 'dark') {
+          document.documentElement.classList.add('dark')
+        } else {
+          document.documentElement.classList.remove('dark')
+        }
+      }
+
+      // 모든 데이터 로드 완료 후 loading: false
+      set({
+        user,
+        session,
+        isApproved,
+        preferences: userPreferences,
+        loading: false,
+        error: null
+      })
+
       return { success: true, user, session, isApproved }
     } catch (err) {
       const errorMessage = err.message || '사용자 정보를 가져오는 중 오류가 발생했습니다.'
       set({ user: null, session: null, isApproved: false, loading: false, error: errorMessage })
       return { success: false, error: errorMessage }
+    }
+  },
+
+  // 액션: 사용자 설정 업데이트
+  updatePreferences: async (newPreferences) => {
+    const state = get()
+    if (!state.user) return { success: false, error: '로그인이 필요합니다.' }
+
+    try {
+      const updatedPreferences = { ...state.preferences, ...newPreferences }
+      const { success, error } = await updateUserPreferences(state.user.id, updatedPreferences)
+
+      if (error) throw new Error(error)
+
+      set({ preferences: updatedPreferences })
+
+      // 다크모드 적용
+      if (updatedPreferences.theme === 'dark') {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+
+      return { success: true, error: null }
+    } catch (err) {
+      return { success: false, error: err.message }
     }
   },
 
