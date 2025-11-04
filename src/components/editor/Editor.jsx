@@ -3,11 +3,13 @@ import CodeMirror from '@uiw/react-codemirror'
 import { markdown } from '@codemirror/lang-markdown'
 import { debounce } from 'lodash'
 import { toggleFavorite } from '../../services/notes'
+import LinkModal from './LinkModal'
 
 function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [isFavorite, setIsFavorite] = useState(false)
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false)
 
   // note가 변경될 때 에디터 업데이트
   useEffect(() => {
@@ -78,6 +80,36 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
     }
   }
 
+  // 링크 요약 완료 핸들러
+  const handleSummarize = async ({ summary, linkType, url }) => {
+    if (!note) return
+
+    // 요약 결과를 에디터에 추가
+    const timestamp = new Date().toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+
+    const summaryHeader = `\n\n---\n\n## 🔗 링크 요약 (${timestamp})\n\n**원본 링크**: ${url}\n\n${summary}\n\n---\n\n`
+
+    const newContent = content + summaryHeader
+    setContent(newContent)
+
+    // 메모에 링크 정보 저장
+    const updates = {
+      content: newContent,
+      link_url: url,
+      link_type: linkType
+    }
+
+    // 즉시 저장 (debounce 없이)
+    onUpdateNote(updates)
+    await onSave(note.id, updates)
+  }
+
   if (!note) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -104,13 +136,21 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
 
   return (
     <div className="flex-1 flex flex-col bg-white dark:bg-gray-900">
-      {/* 링크 입력 영역 (Phase 4에서 구현 예정) */}
+      {/* 링크 요약 영역 */}
       <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-        <div className="flex items-center space-x-2">
-          <svg className="w-5 h-5 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-          </svg>
-          <span className="text-sm text-gray-500 dark:text-gray-500">링크 요약 기능은 Phase 4에서 추가됩니다</span>
+        <div className="flex items-center space-x-3">
+          {/* 링크 요약 버튼 */}
+          <button
+            onClick={() => setIsLinkModalOpen(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+            <span>링크 요약</span>
+          </button>
+
+          {/* 링크 정보 표시 */}
           {note.data.link_type && (
             <div className="flex items-center space-x-2 ml-auto">
               {note.data.link_type === 'youtube' ? (
@@ -225,6 +265,13 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
           }}
         />
       </div>
+
+      {/* 링크 요약 모달 */}
+      <LinkModal
+        isOpen={isLinkModalOpen}
+        onClose={() => setIsLinkModalOpen(false)}
+        onSummarize={handleSummarize}
+      />
     </div>
   )
 }
