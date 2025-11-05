@@ -110,6 +110,16 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
     await onSave(note.id, updates)
   }
 
+  // 마크다운 포맷 삽입 함수
+  const insertMarkdown = (prefix, suffix = '') => {
+    if (!note) return
+
+    const newContent = content + prefix + suffix
+    setContent(newContent)
+    onUpdateNote({ content: newContent })
+    debouncedSave(note.id, { content: newContent })
+  }
+
   if (!note) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -135,57 +145,135 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-white dark:bg-gray-900">
-      {/* 링크 요약 영역 */}
+    <div className="flex-1 flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
+      {/* 에디터 도구 모음 */}
       <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-        <div className="flex items-center space-x-3">
-          {/* 링크 요약 버튼 (비활성화 - Phase 4 개선 예정) */}
+        <div className="flex items-center justify-between gap-3">
+          {/* 왼쪽: 텍스트 서식 도구 */}
+          <div className="flex items-center gap-1">
+            {/* 제목 */}
+            <button
+              onClick={() => insertMarkdown('\n## ', '\n')}
+              className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              title="제목"
+            >
+              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+              </svg>
+            </button>
+
+            <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+
+            {/* 굵게 */}
+            <button
+              onClick={() => insertMarkdown('**', '**')}
+              className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors font-bold"
+              title="굵게 (Bold)"
+            >
+              <span className="text-gray-700 dark:text-gray-300">B</span>
+            </button>
+
+            {/* 이탤릭 */}
+            <button
+              onClick={() => insertMarkdown('*', '*')}
+              className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors italic"
+              title="이탤릭 (Italic)"
+            >
+              <span className="text-gray-700 dark:text-gray-300">I</span>
+            </button>
+
+            {/* 코드 */}
+            <button
+              onClick={() => insertMarkdown('`', '`')}
+              className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors font-mono"
+              title="코드"
+            >
+              <span className="text-gray-700 dark:text-gray-300">&lt;/&gt;</span>
+            </button>
+
+            <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+
+            {/* 리스트 */}
+            <button
+              onClick={() => insertMarkdown('\n- ', '\n')}
+              className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              title="리스트"
+            >
+              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+
+            {/* 체크리스트 */}
+            <button
+              onClick={() => insertMarkdown('\n- [ ] ', '\n')}
+              className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              title="체크리스트"
+            >
+              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+            </button>
+
+            {/* 링크 */}
+            <button
+              onClick={() => insertMarkdown('[', '](url)')}
+              className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              title="링크"
+            >
+              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+            </button>
+          </div>
+
+          {/* 오른쪽: 링크 요약 버튼 */}
           <button
             onClick={() => setIsLinkModalOpen(true)}
             disabled
-            className="flex items-center space-x-2 px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed opacity-60"
+            className="flex items-center space-x-2 px-3 py-1.5 bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed opacity-60"
             title="링크 요약 기능은 현재 개선 중입니다"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
             </svg>
-            <span>링크 요약 (개선 예정)</span>
+            <span className="hidden sm:inline">링크 요약</span>
           </button>
-
-          {/* 링크 정보 표시 */}
-          {note.data.link_type && (
-            <div className="flex items-center space-x-2 ml-auto">
-              {note.data.link_type === 'youtube' ? (
-                <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full">
-                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" />
-                  </svg>
-                  YouTube
-                </span>
-              ) : (
-                <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full">
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                  </svg>
-                  Web
-                </span>
-              )}
-              {note.data.link_url && (
-                <a
-                  href={note.data.link_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                  aria-label="원본 링크"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
-              )}
-            </div>
-          )}
         </div>
+
+        {/* 링크 정보 표시 (두 번째 줄) */}
+        {note.data.link_type && (
+          <div className="flex items-center space-x-2 mt-2">
+            {note.data.link_type === 'youtube' ? (
+              <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" />
+                </svg>
+                YouTube
+              </span>
+            ) : (
+              <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                Web
+              </span>
+            )}
+            {note.data.link_url && (
+              <a
+                href={note.data.link_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                aria-label="원본 링크"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 제목 입력 */}
@@ -246,8 +334,8 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
         </div>
       </div>
 
-      {/* CodeMirror 에디터 */}
-      <div className="flex-1 overflow-hidden">
+      {/* CodeMirror 에디터 - 스크롤 가능하도록 수정 */}
+      <div className="flex-1 overflow-auto">
         <CodeMirror
           value={content}
           height="100%"
@@ -263,7 +351,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
           className="h-full text-base"
           style={{
             fontSize: '16px',
-            height: '100%'
+            minHeight: '100%'
           }}
         />
       </div>
