@@ -139,15 +139,17 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
       {/* 링크 요약 영역 */}
       <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
         <div className="flex items-center space-x-3">
-          {/* 링크 요약 버튼 */}
+          {/* 링크 요약 버튼 (비활성화 - Phase 4 개선 예정) */}
           <button
             onClick={() => setIsLinkModalOpen(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-sm font-medium rounded-lg transition-colors"
+            disabled
+            className="flex items-center space-x-2 px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed opacity-60"
+            title="링크 요약 기능은 현재 개선 중입니다"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
             </svg>
-            <span>링크 요약</span>
+            <span>링크 요약 (개선 예정)</span>
           </button>
 
           {/* 링크 정보 표시 */}
