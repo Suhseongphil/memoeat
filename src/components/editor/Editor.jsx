@@ -11,7 +11,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
   const [isFavorite, setIsFavorite] = useState(false)
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false)
   const [showTextColorPicker, setShowTextColorPicker] = useState(false)
-  const [showBgColorPicker, setShowBgColorPicker] = useState(false)
+  const [showFontSizePicker, setShowFontSizePicker] = useState(false)
   const editorRef = useRef(null)
 
   // note가 변경될 때 에디터 업데이트
@@ -124,12 +124,10 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
   }
 
   // 색상 적용 함수
-  const applyColor = (color, isBackground = false) => {
+  const applyColor = (color) => {
     if (!note) return
 
-    const tag = isBackground
-      ? `<span style="background-color:${color}">텍스트</span>`
-      : `<span style="color:${color}">텍스트</span>`
+    const tag = `<span style="color:${color}">텍스트</span>`
 
     const newContent = content + tag
     setContent(newContent)
@@ -138,7 +136,21 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
 
     // 색상 선택기 닫기
     setShowTextColorPicker(false)
-    setShowBgColorPicker(false)
+  }
+
+  // 글자 크기 적용 함수
+  const applyFontSize = (size) => {
+    if (!note) return
+
+    const tag = `<span style="font-size:${size}">${size} 텍스트</span>`
+
+    const newContent = content + tag
+    setContent(newContent)
+    onUpdateNote({ content: newContent })
+    debouncedSave(note.id, { content: newContent })
+
+    // 글자 크기 선택기 닫기
+    setShowFontSizePicker(false)
   }
 
   // 실행 취소/다시 실행 (CodeMirror의 undo/redo 명령 사용)
@@ -173,13 +185,13 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
     { name: '회색', value: '#6B7280' },
   ]
 
-  const bgColors = [
-    { name: '노랑', value: '#FEF08A' },
-    { name: '초록', value: '#BBF7D0' },
-    { name: '파랑', value: '#BFDBFE' },
-    { name: '보라', value: '#DDD6FE' },
-    { name: '분홍', value: '#FBCFE8' },
-    { name: '회색', value: '#E5E7EB' },
+  // 글자 크기 옵션
+  const fontSizes = [
+    { name: '작게', value: '12px' },
+    { name: '보통', value: '16px' },
+    { name: '크게', value: '20px' },
+    { name: '매우 크게', value: '24px' },
+    { name: '초대형', value: '32px' },
   ]
 
   if (!note) {
@@ -269,7 +281,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
               <button
                 onClick={() => {
                   setShowTextColorPicker(!showTextColorPicker)
-                  setShowBgColorPicker(false)
+                  setShowFontSizePicker(false)
                 }}
                 className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                 title="글자 색상"
@@ -285,7 +297,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                     {textColors.map((color) => (
                       <button
                         key={color.value}
-                        onClick={() => applyColor(color.value, false)}
+                        onClick={() => applyColor(color.value)}
                         className="w-8 h-8 rounded border-2 border-gray-300 dark:border-gray-600 hover:scale-110 transition-transform"
                         style={{ backgroundColor: color.value }}
                         title={color.name}
@@ -296,32 +308,34 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
               )}
             </div>
 
-            {/* 배경 색상 */}
+            {/* 글자 크기 */}
             <div className="relative">
               <button
                 onClick={() => {
-                  setShowBgColorPicker(!showBgColorPicker)
+                  setShowFontSizePicker(!showFontSizePicker)
                   setShowTextColorPicker(false)
                 }}
                 className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                title="배경 색상 (형광펜)"
+                title="글자 크기"
               >
                 <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8m-8 6h16" />
                 </svg>
               </button>
-              {/* 색상 팔레트 */}
-              {showBgColorPicker && (
-                <div className="absolute top-full mt-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
-                  <div className="grid grid-cols-3 gap-1">
-                    {bgColors.map((color) => (
+              {/* 글자 크기 선택 */}
+              {showFontSizePicker && (
+                <div className="absolute top-full mt-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
+                  <div className="flex flex-col gap-1">
+                    {fontSizes.map((size) => (
                       <button
-                        key={color.value}
-                        onClick={() => applyColor(color.value, true)}
-                        className="w-8 h-8 rounded border-2 border-gray-300 dark:border-gray-600 hover:scale-110 transition-transform"
-                        style={{ backgroundColor: color.value }}
-                        title={color.name}
-                      />
+                        key={size.value}
+                        onClick={() => applyFontSize(size.value)}
+                        className="px-3 py-2 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        style={{ fontSize: size.value }}
+                        title={size.name}
+                      >
+                        {size.name}
+                      </button>
                     ))}
                   </div>
                 </div>
