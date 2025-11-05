@@ -1,0 +1,159 @@
+/* Tiptap 에디터 기본 스타일 */
+.ProseMirror {
+  min-height: 100%;
+  outline: none;
+  padding: 1.5rem;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #1f2937;
+}
+
+.dark .ProseMirror {
+  color: #f9fafb;
+}
+
+/* 에디터 내부 요소 스타일 */
+.ProseMirror h1 {
+  font-size: 2em;
+  font-weight: bold;
+  margin-top: 0.67em;
+  margin-bottom: 0.67em;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin-top: 0.83em;
+  margin-bottom: 0.83em;
+}
+
+.ProseMirror h3 {
+  font-size: 1.17em;
+  font-weight: bold;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.ProseMirror p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.ProseMirror strong {
+  font-weight: bold;
+}
+
+.ProseMirror em {
+  font-style: italic;
+}
+
+.ProseMirror u {
+  text-decoration: underline;
+}
+
+.ProseMirror a {
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dark .ProseMirror a {
+  color: #60a5fa;
+}
+
+.ProseMirror a:hover {
+  color: #1d4ed8;
+}
+
+.dark .ProseMirror a:hover {
+  color: #93c5fd;
+}
+
+.ProseMirror hr {
+  border: none;
+  border-top: 2px solid #e5e7eb;
+  margin: 2rem 0;
+}
+
+.dark .ProseMirror hr {
+  border-top-color: #374151;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5rem;
+  margin: 0.5em 0;
+}
+
+.ProseMirror li {
+  margin: 0.25em 0;
+}
+
+.ProseMirror code {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875em;
+}
+
+.dark .ProseMirror code {
+  background-color: #374151;
+}
+
+.ProseMirror pre {
+  background-color: #f3f4f6;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.dark .ProseMirror pre {
+  background-color: #1f2937;
+}
+
+.ProseMirror pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.ProseMirror blockquote {
+  border-left: 4px solid #e5e7eb;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: #6b7280;
+}
+
+.dark .ProseMirror blockquote {
+  border-left-color: #4b5563;
+  color: #9ca3af;
+}
+
+/* 플레이스홀더 */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #9ca3af;
+  pointer-events: none;
+  height: 0;
+}
+
+.dark .ProseMirror p.is-editor-empty:first-child::before {
+  color: #6b7280;
+}
+
+/* 선택 영역 스타일 */
+.ProseMirror ::selection {
+  background-color: #bfdbfe;
+}
+
+.dark .ProseMirror ::selection {
+  background-color: #1e40af;
+}
+
+/* 포커스 스타일 제거 (아웃라인 제거) */
+.ProseMirror:focus {
+  outline: none;
+}

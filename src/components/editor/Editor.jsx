@@ -1,14 +1,19 @@
 import { useState, useEffect, useCallback } from 'react'
-import CodeMirror from '@uiw/react-codemirror'
-import { markdown } from '@codemirror/lang-markdown'
-import { EditorView } from '@codemirror/view'
+import { useEditor, EditorContent } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import TextAlign from '@tiptap/extension-text-align'
+import TextStyle from '@tiptap/extension-text-style'
+import Color from '@tiptap/extension-color'
+import FontFamily from '@tiptap/extension-font-family'
+import Underline from '@tiptap/extension-underline'
+import Link from '@tiptap/extension-link'
 import { debounce } from 'lodash'
 import { toggleFavorite } from '../../services/notes'
 import LinkModal from './LinkModal'
+import './tiptap.css'
 
 function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
   const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
   const [isFavorite, setIsFavorite] = useState(false)
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false)
   const [showTextColorPicker, setShowTextColorPicker] = useState(false)
@@ -16,20 +21,43 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
   const [showFontFamilyPicker, setShowFontFamilyPicker] = useState(false)
   const [showSpecialCharPicker, setShowSpecialCharPicker] = useState(false)
   const [showAlignmentPicker, setShowAlignmentPicker] = useState(false)
-  const [showLineSpacingPicker, setShowLineSpacingPicker] = useState(false)
 
-  // note가 변경될 때 에디터 업데이트
-  useEffect(() => {
-    if (note) {
-      setTitle(note.data.title || '')
-      setContent(note.data.content || '')
-      setIsFavorite(note.data.is_favorite || false)
-    } else {
-      setTitle('')
-      setContent('')
-      setIsFavorite(false)
+  // Tiptap 에디터 초기화
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: {
+          levels: [1, 2, 3]
+        }
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+        alignments: ['left', 'center', 'right', 'justify']
+      }),
+      TextStyle,
+      Color,
+      FontFamily.configure({
+        types: ['textStyle']
+      }),
+      Underline,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-blue-600 underline'
+        }
+      })
+    ],
+    content: '',
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none max-w-none p-6'
+      }
+    },
+    onUpdate: ({ editor }) => {
+      const html = editor.getHTML()
+      handleContentChange(html)
     }
-  }, [note?.id])
+  })
 
   // 자동 저장 함수 (debounce 2초)
   const debouncedSave = useCallback(
@@ -39,6 +67,31 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
     [onSave]
   )
 
+  // 내용 변경 핸들러
+  const handleContentChange = (html) => {
+    if (note) {
+      onUpdateNote({ content: html })
+      debouncedSave(note.id, { content: html })
+    }
+  }
+
+  // note가 변경될 때 에디터 업데이트
+  useEffect(() => {
+    if (note && editor) {
+      setTitle(note.data.title || '')
+      setIsFavorite(note.data.is_favorite || false)
+
+      // 에디터 내용이 다를 때만 업데이트 (무한 루프 방지)
+      if (editor.getHTML() !== note.data.content) {
+        editor.commands.setContent(note.data.content || '')
+      }
+    } else if (!note && editor) {
+      setTitle('')
+      setIsFavorite(false)
+      editor.commands.setContent('')
+    }
+  }, [note?.id, editor])
+
   // 제목 변경 핸들러
   const handleTitleChange = (e) => {
     const newTitle = e.target.value
@@ -46,15 +99,6 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
     if (note) {
       onUpdateNote({ title: newTitle })
       debouncedSave(note.id, { title: newTitle })
-    }
-  }
-
-  // 내용 변경 핸들러
-  const handleContentChange = (value) => {
-    setContent(value)
-    if (note) {
-      onUpdateNote({ content: value })
-      debouncedSave(note.id, { content: value })
     }
   }
 
@@ -84,7 +128,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
 
   // 링크 요약 완료 핸들러
   const handleSummarize = async ({ summary, linkType, url }) => {
-    if (!note) return
+    if (!note || !editor) return
 
     const timestamp = new Date().toLocaleString('ko-KR', {
       year: 'numeric',
@@ -94,13 +138,18 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
       minute: '2-digit'
     })
 
-    const summaryHeader = `\n\n---\n\n## 🔗 링크 요약 (${timestamp})\n\n**원본 링크**: ${url}\n\n${summary}\n\n---\n\n`
+    const summaryHtml = `
+      <hr />
+      <h2>🔗 링크 요약 (${timestamp})</h2>
+      <p><strong>원본 링크</strong>: ${url}</p>
+      ${summary.split('\n').map(line => `<p>${line}</p>`).join('')}
+      <hr />
+    `
 
-    const newContent = content + summaryHeader
-    setContent(newContent)
+    editor.commands.insertContent(summaryHtml)
 
     const updates = {
-      content: newContent,
+      content: editor.getHTML(),
       link_url: url,
       link_type: linkType
     }
@@ -109,91 +158,11 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
     await onSave(note.id, updates)
   }
 
-  // 서식 삽입 함수
-  const insertMarkdown = (prefix, suffix = '') => {
-    if (!note) return
-
-    const newContent = content + prefix + suffix
-    setContent(newContent)
-    onUpdateNote({ content: newContent })
-    debouncedSave(note.id, { content: newContent })
-  }
-
-  // 색상 적용 함수
-  const applyColor = (color) => {
-    if (!note) return
-
-    const tag = `<span style="color:${color}">텍스트</span>`
-    const newContent = content + tag
-    setContent(newContent)
-    onUpdateNote({ content: newContent })
-    debouncedSave(note.id, { content: newContent })
-
-    setShowTextColorPicker(false)
-  }
-
-  // 글자 크기 적용 함수
-  const applyFontSize = (size) => {
-    if (!note) return
-
-    const tag = `<span style="font-size:${size}">텍스트</span>`
-    const newContent = content + tag
-    setContent(newContent)
-    onUpdateNote({ content: newContent })
-    debouncedSave(note.id, { content: newContent })
-
-    setShowFontSizePicker(false)
-  }
-
-  // 글꼴 적용 함수
-  const applyFontFamily = (font) => {
-    if (!note) return
-
-    const tag = `<span style="font-family:${font}">텍스트</span>`
-    const newContent = content + tag
-    setContent(newContent)
-    onUpdateNote({ content: newContent })
-    debouncedSave(note.id, { content: newContent })
-
-    setShowFontFamilyPicker(false)
-  }
-
   // 특수문자 삽입
   const insertSpecialChar = (char) => {
-    if (!note) return
-
-    const newContent = content + char
-    setContent(newContent)
-    onUpdateNote({ content: newContent })
-    debouncedSave(note.id, { content: newContent })
-
+    if (!editor) return
+    editor.commands.insertContent(char)
     setShowSpecialCharPicker(false)
-  }
-
-  // 정렬 적용 함수
-  const applyAlignment = (alignment) => {
-    if (!note) return
-
-    const tag = `<div style="text-align:${alignment}">텍스트</div>`
-    const newContent = content + tag
-    setContent(newContent)
-    onUpdateNote({ content: newContent })
-    debouncedSave(note.id, { content: newContent })
-
-    setShowAlignmentPicker(false)
-  }
-
-  // 줄간격 적용 함수
-  const applyLineSpacing = (spacing) => {
-    if (!note) return
-
-    const tag = `<div style="line-height:${spacing}">텍스트</div>`
-    const newContent = content + tag
-    setContent(newContent)
-    onUpdateNote({ content: newContent })
-    debouncedSave(note.id, { content: newContent })
-
-    setShowLineSpacingPicker(false)
   }
 
   // 색상 팔레트
@@ -253,15 +222,6 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
     { name: '양쪽', value: 'justify', icon: '⬌' }
   ]
 
-  // 줄간격 옵션
-  const lineSpacings = [
-    { name: '좁게', value: '1.2' },
-    { name: '보통', value: '1.5' },
-    { name: '넓게', value: '1.8' },
-    { name: '매우 넓게', value: '2.0' },
-    { name: '아주 넓게', value: '2.5' }
-  ]
-
   if (!note) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -286,6 +246,10 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
     )
   }
 
+  if (!editor) {
+    return null
+  }
+
   return (
     <div className="flex-1 flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
       {/* 에디터 도구 모음 - 네이버 카페 스타일 */}
@@ -300,7 +264,6 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowTextColorPicker(false)
                 setShowSpecialCharPicker(false)
                 setShowAlignmentPicker(false)
-                setShowLineSpacingPicker(false)
               }}
               className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
               title="글꼴"
@@ -313,7 +276,10 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                   {fontFamilies.map((font) => (
                     <button
                       key={font.value}
-                      onClick={() => applyFontFamily(font.value)}
+                      onClick={() => {
+                        editor.chain().focus().setFontFamily(font.value).run()
+                        setShowFontFamilyPicker(false)
+                      }}
                       className="px-3 py-2 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
                       style={{ fontFamily: font.value }}
                     >
@@ -334,7 +300,6 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowTextColorPicker(false)
                 setShowSpecialCharPicker(false)
                 setShowAlignmentPicker(false)
-                setShowLineSpacingPicker(false)
               }}
               className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
               title="글자 크기"
@@ -347,7 +312,10 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                   {fontSizes.map((size) => (
                     <button
                       key={size.value}
-                      onClick={() => applyFontSize(size.value)}
+                      onClick={() => {
+                        editor.chain().focus().setMark('textStyle', { fontSize: size.value }).run()
+                        setShowFontSizePicker(false)
+                      }}
                       className="px-3 py-1.5 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
                       style={{ fontSize: size.value }}
                     >
@@ -363,9 +331,11 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
 
           {/* 굵게 */}
           <button
-            onClick={() => insertMarkdown('**', '**')}
-            className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800 font-bold"
-            title="굵게 (Bold)"
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            className={`px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-bold ${
+              editor.isActive('bold') ? 'bg-gray-200 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'
+            }`}
+            title="굵게 (Ctrl+B)"
           >
             B
           </button>
@@ -381,7 +351,6 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowFontFamilyPicker(false)
                 setShowSpecialCharPicker(false)
                 setShowAlignmentPicker(false)
-                setShowLineSpacingPicker(false)
               }}
               className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
               title="글자 색상"
@@ -394,7 +363,10 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                   {textColors.map((color) => (
                     <button
                       key={color.value}
-                      onClick={() => applyColor(color.value)}
+                      onClick={() => {
+                        editor.chain().focus().setColor(color.value).run()
+                        setShowTextColorPicker(false)
+                      }}
                       className="w-8 h-8 rounded border-2 border-gray-300 dark:border-gray-600 hover:scale-110 transition-transform"
                       style={{ backgroundColor: color.value }}
                       title={color.name}
@@ -416,7 +388,6 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowFontSizePicker(false)
                 setShowFontFamilyPicker(false)
                 setShowSpecialCharPicker(false)
-                setShowLineSpacingPicker(false)
               }}
               className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
               title="정렬"
@@ -429,44 +400,16 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                   {alignments.map((align) => (
                     <button
                       key={align.value}
-                      onClick={() => applyAlignment(align.value)}
-                      className="px-3 py-2 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm flex items-center gap-2"
+                      onClick={() => {
+                        editor.chain().focus().setTextAlign(align.value).run()
+                        setShowAlignmentPicker(false)
+                      }}
+                      className={`px-3 py-2 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm flex items-center gap-2 ${
+                        editor.isActive({ textAlign: align.value }) ? 'bg-gray-100 dark:bg-gray-700' : ''
+                      }`}
                     >
                       <span>{align.icon}</span>
                       <span>{align.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 줄간격 */}
-          <div className="relative">
-            <button
-              onClick={() => {
-                setShowLineSpacingPicker(!showLineSpacingPicker)
-                setShowTextColorPicker(false)
-                setShowFontSizePicker(false)
-                setShowFontFamilyPicker(false)
-                setShowSpecialCharPicker(false)
-                setShowAlignmentPicker(false)
-              }}
-              className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
-              title="줄간격"
-            >
-              줄간격
-            </button>
-            {showLineSpacingPicker && (
-              <div className="absolute top-full mt-1 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
-                <div className="flex flex-col gap-1">
-                  {lineSpacings.map((spacing) => (
-                    <button
-                      key={spacing.value}
-                      onClick={() => applyLineSpacing(spacing.value)}
-                      className="px-3 py-2 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
-                    >
-                      {spacing.name} ({spacing.value})
                     </button>
                   ))}
                 </div>
@@ -485,7 +428,6 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowFontSizePicker(false)
                 setShowFontFamilyPicker(false)
                 setShowAlignmentPicker(false)
-                setShowLineSpacingPicker(false)
               }}
               className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
               title="특수문자"
@@ -512,8 +454,15 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
 
           {/* 링크 */}
           <button
-            onClick={() => insertMarkdown('[', '](url)')}
-            className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
+            onClick={() => {
+              const url = window.prompt('링크 URL:')
+              if (url) {
+                editor.chain().focus().setLink({ href: url }).run()
+              }
+            }}
+            className={`px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+              editor.isActive('link') ? 'bg-gray-200 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'
+            }`}
             title="링크 삽입"
           >
             링크
@@ -615,29 +564,9 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
         </div>
       </div>
 
-      {/* CodeMirror 에디터 - 자동 줄바꿈 적용 */}
+      {/* Tiptap 에디터 */}
       <div className="flex-1 overflow-auto">
-        <CodeMirror
-          value={content}
-          height="100%"
-          extensions={[
-            markdown(),
-            EditorView.lineWrapping // 자동 줄바꿈 활성화
-          ]}
-          onChange={handleContentChange}
-          theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
-          basicSetup={{
-            lineNumbers: false,
-            highlightActiveLineGutter: false,
-            highlightActiveLine: false,
-            foldGutter: false
-          }}
-          className="h-full text-base"
-          style={{
-            fontSize: '16px',
-            minHeight: '100%'
-          }}
-        />
+        <EditorContent editor={editor} className="h-full" />
       </div>
 
       {/* 링크 요약 모달 */}
