@@ -187,51 +187,18 @@ export const deleteNote = async (noteId) => {
 }
 
 /**
- * 메인 메모 설정/해제
+ * 즐겨찾기 토글
  * @param {string} noteId - 메모 ID
- * @param {string} userId - 사용자 ID
  * @returns {Promise<{note, error}>}
  */
-export const setMainNote = async (noteId, userId) => {
+export const toggleFavorite = async (noteId) => {
   try {
-    // 1. 현재 메모의 is_favorite 상태 확인
-    const { note: currentNote, error: fetchError } = await getNote(noteId)
+    const { note: existingNote, error: fetchError } = await getNote(noteId)
     if (fetchError) throw new Error(fetchError)
 
-    const isCurrentlyMain = currentNote.data.is_favorite
-
-    // 2. 다른 메모를 메인으로 지정하는 경우, 기존 메인 메모 해제
-    if (!isCurrentlyMain) {
-      // 해당 사용자의 모든 메모에서 is_favorite를 false로 설정
-      const { data: allNotes } = await supabase
-        .from('notes')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('data->>is_favorite', 'true')
-
-      if (allNotes && allNotes.length > 0) {
-        const updates = allNotes.map(note => {
-          const updatedData = {
-            ...note.data,
-            is_favorite: false,
-            updated_at: new Date().toISOString()
-          }
-          return supabase
-            .from('notes')
-            .update({
-              data: updatedData,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', note.id)
-        })
-        await Promise.all(updates)
-      }
-    }
-
-    // 3. 현재 메모의 is_favorite 토글
     const updatedData = {
-      ...currentNote.data,
-      is_favorite: !isCurrentlyMain,
+      ...existingNote.data,
+      is_favorite: !existingNote.data.is_favorite,
       updated_at: new Date().toISOString()
     }
 
@@ -249,23 +216,9 @@ export const setMainNote = async (noteId, userId) => {
 
     return { note, error: null }
   } catch (error) {
-    console.error('SetMainNote error:', error)
+    console.error('ToggleFavorite error:', error)
     return { note: null, error: error.message }
   }
-}
-
-/**
- * 즐겨찾기 토글 (하위 호환성 유지)
- * @deprecated setMainNote 사용 권장
- */
-export const toggleFavorite = async (noteId) => {
-  console.warn('toggleFavorite is deprecated. Use setMainNote instead.')
-  const { note: existingNote, error: fetchError } = await getNote(noteId)
-  if (fetchError) return { note: null, error: fetchError }
-
-  return updateNote(noteId, {
-    is_favorite: !existingNote.data.is_favorite
-  })
 }
 
 /**

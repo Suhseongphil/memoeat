@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import Document from '@tiptap/extension-document'
 import Paragraph from '@tiptap/extension-paragraph'
@@ -14,7 +14,7 @@ import { TextStyle } from '@tiptap/extension-text-style'
 import { Link } from '@tiptap/extension-link'
 import { Underline } from '@tiptap/extension-underline'
 import { debounce } from 'lodash'
-import { setMainNote } from '../../services/notes'
+import { toggleFavorite } from '../../services/notes'
 import LinkModal from './LinkModal'
 import { FontSize } from './extensions/FontSize'
 import './tiptap.css'
@@ -28,6 +28,14 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
   const [showFontFamilyPicker, setShowFontFamilyPicker] = useState(false)
   const [showSpecialCharPicker, setShowSpecialCharPicker] = useState(false)
   const [showAlignmentPicker, setShowAlignmentPicker] = useState(false)
+  const [saveStatus, setSaveStatus] = useState('saved') // 'saved' | 'saving' | 'error'
+  const [isCopied, setIsCopied] = useState(false) // 클립보드 복사 상태
+
+  // debouncedSave 함수 참조를 저장
+  const debouncedSaveRef = useRef(null)
+
+  // 각 메모별 편집 상태를 저장 (noteId -> {title, content, isFavorite})
+  const editStateRef = useRef(new Map())
 
   // 드롭다운 외부 클릭 감지
   useEffect(() => {
@@ -47,6 +55,21 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  // 브라우저 종료/새로고침 시 저장 처리
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      // 대기 중인 저장이 있으면 즉시 실행
+      if (debouncedSaveRef.current?.flush) {
+        debouncedSaveRef.current.flush()
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
     }
   }, [])
 
@@ -108,35 +131,121 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
     }
   }, [note?.id])  // note.id가 변경될 때마다 새로운 에디터 인스턴스 생성
 
-  // 자동 저장 함수 (debounce 2초)
+  // 자동 저장 함수 (debounce 3초)
   const debouncedSave = useCallback(
-    debounce(async (noteId, updates) => {
-      await onSave(noteId, updates)
-    }, 2000),
+    debounce(async (noteId, updates, editStateMap) => {
+      const MAX_RETRIES = 3
+      const RETRY_DELAY = 1000 // 1초
+
+      // 재시도 로직
+      const saveWithRetry = async (retryCount = 0) => {
+        try {
+          await onSave(noteId, updates)
+          return true
+        } catch (error) {
+          console.error(`저장 실패 (시도 ${retryCount + 1}/${MAX_RETRIES + 1}):`, error)
+
+          if (retryCount < MAX_RETRIES) {
+            // 재시도 전 대기
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)))
+            return saveWithRetry(retryCount + 1)
+          }
+
+          // 모든 재시도 실패
+          throw error
+        }
+      }
+
+      try {
+        setSaveStatus('saving')
+        await saveWithRetry()
+        setSaveStatus('saved')
+
+        // 저장 성공 시 해당 메모의 편집 상태를 DB와 동기화
+        // (저장된 내용이 DB의 최신 상태가 됨)
+        const currentState = editStateMap.get(noteId)
+        if (currentState) {
+          editStateMap.set(noteId, {
+            ...currentState,
+            ...updates  // 저장된 내용으로 업데이트
+          })
+        }
+
+        // 3초 후 저장 완료 메시지 숨김
+        setTimeout(() => {
+          setSaveStatus('saved')
+        }, 3000)
+      } catch (error) {
+        console.error('저장 중 오류 (재시도 실패):', error)
+        setSaveStatus('error')
+
+        // 오류 알림
+        alert('메모 저장에 실패했습니다. 네트워크 연결을 확인해주세요.')
+      }
+    }, 3000),
     [onSave]
   )
+
+  // debouncedSave를 ref에 저장
+  useEffect(() => {
+    debouncedSaveRef.current = debouncedSave
+  }, [debouncedSave])
 
   // 내용 변경 핸들러
   const handleContentChange = (html) => {
     if (note) {
+      // 편집 상태 업데이트
+      const currentState = editStateRef.current.get(note.id) || {}
+      editStateRef.current.set(note.id, {
+        ...currentState,
+        content: html
+      })
+
       onUpdateNote({ content: html })
-      debouncedSave(note.id, { content: html })
+      debouncedSave(note.id, { content: html }, editStateRef.current)
     }
   }
 
   // note가 변경될 때 에디터 업데이트
   useEffect(() => {
+    // note가 변경되기 전에 대기 중인 저장을 즉시 실행
+    if (debouncedSaveRef.current?.flush) {
+      debouncedSaveRef.current.flush()
+    }
+
     if (note && editor) {
-      setTitle(note.data.title || '')
-      setIsFavorite(note.data.is_favorite || false)
+      // 이전에 편집한 상태가 있는지 확인
+      const savedState = editStateRef.current.get(note.id)
 
-      // 에디터 내용이 다를 때만 업데이트 (무한 루프 방지)
-      const currentContent = editor.getHTML()
-      const newContent = note.data.content || '<p></p>'
+      if (savedState) {
+        // 이전 편집 상태 복원 (사용자가 편집했던 내용 유지)
+        setTitle(savedState.title)
+        setIsFavorite(savedState.isFavorite)
 
-      if (currentContent !== newContent) {
-        // 새 내용 설정 (emitUpdate: false로 히스토리에 추가되지 않도록)
-        editor.commands.setContent(newContent, false)
+        const currentContent = editor.getHTML()
+        if (currentContent !== savedState.content) {
+          editor.commands.setContent(savedState.content, false)
+        }
+      } else {
+        // 처음 여는 메모는 DB 데이터 사용
+        const dbTitle = note.data.title || ''
+        const dbIsFavorite = note.data.is_favorite || false
+        const dbContent = note.data.content || '<p></p>'
+
+        setTitle(dbTitle)
+        setIsFavorite(dbIsFavorite)
+
+        const currentContent = editor.getHTML()
+        if (currentContent !== dbContent) {
+          editor.commands.setContent(dbContent, false)
+        }
+
+        // 초기 상태 저장
+        editStateRef.current.set(note.id, {
+          title: dbTitle,
+          content: dbContent,
+          isFavorite: dbIsFavorite
+        })
       }
     } else if (!note && editor) {
       setTitle('')
@@ -150,24 +259,48 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
     const newTitle = e.target.value
     setTitle(newTitle)
     if (note) {
+      // 편집 상태 업데이트
+      const currentState = editStateRef.current.get(note.id) || {}
+      editStateRef.current.set(note.id, {
+        ...currentState,
+        title: newTitle
+      })
+
       onUpdateNote({ title: newTitle })
-      debouncedSave(note.id, { title: newTitle })
+      debouncedSave(note.id, { title: newTitle }, editStateRef.current)
     }
   }
 
-  // 메인 메모 설정/해제
-  const handleSetMainNote = async () => {
+  // 즐겨찾기 토글
+  const handleToggleFavorite = async () => {
     if (!note) return
 
     const newFavoriteState = !isFavorite
     setIsFavorite(newFavoriteState)
 
-    const { note: updatedNote, error } = await setMainNote(note.id, note.user_id)
+    // 편집 상태 업데이트
+    const currentState = editStateRef.current.get(note.id) || {}
+    editStateRef.current.set(note.id, {
+      ...currentState,
+      isFavorite: newFavoriteState
+    })
+
+    const { note: updatedNote, error } = await toggleFavorite(note.id)
     if (error) {
       setIsFavorite(!newFavoriteState)
-      console.error('메인 메모 설정 실패:', error)
+      // 편집 상태 복원
+      editStateRef.current.set(note.id, {
+        ...currentState,
+        isFavorite: !newFavoriteState
+      })
+      console.error('즐겨찾기 토글 실패:', error)
     } else if (updatedNote) {
       await onSave(note.id, { is_favorite: updatedNote.data.is_favorite })
+      // 저장 성공 시 편집 상태도 업데이트
+      editStateRef.current.set(note.id, {
+        ...currentState,
+        isFavorite: updatedNote.data.is_favorite
+      })
     }
   }
 
@@ -175,7 +308,133 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
   const handleDelete = () => {
     if (!note) return
     if (confirm('이 메모를 삭제하시겠습니까?')) {
+      // 삭제 전에 대기 중인 저장 완료
+      if (debouncedSaveRef.current?.flush) {
+        debouncedSaveRef.current.flush()
+      }
       onDeleteNote(note.id)
+    }
+  }
+
+  // HTML을 일반 텍스트로 변환
+  const convertHtmlToPlainText = (html) => {
+    if (!html) return ''
+
+    // DOM을 사용하여 HTML 파싱
+    const temp = document.createElement('div')
+    temp.innerHTML = html
+
+    // 줄바꿈 처리
+    const processNode = (node) => {
+      let text = ''
+
+      node.childNodes.forEach(child => {
+        if (child.nodeType === Node.TEXT_NODE) {
+          text += child.textContent
+        } else if (child.nodeType === Node.ELEMENT_NODE) {
+          const tagName = child.tagName.toLowerCase()
+
+          // 블록 요소는 앞뒤로 줄바꿈 추가
+          if (['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
+            text += '\n' + processNode(child) + '\n'
+          }
+          // 줄바꿈 태그
+          else if (tagName === 'br') {
+            text += '\n'
+          }
+          // 리스트 아이템
+          else if (tagName === 'li') {
+            text += '\n• ' + processNode(child)
+          }
+          // 인라인 요소는 그냥 내용만
+          else {
+            text += processNode(child)
+          }
+        }
+      })
+
+      return text
+    }
+
+    let plainText = processNode(temp)
+
+    // 연속된 줄바꿈을 최대 2개로 제한
+    plainText = plainText.replace(/\n{3,}/g, '\n\n')
+
+    // 앞뒤 공백 제거
+    return plainText.trim()
+  }
+
+  // 클립보드로 복사
+  const handleCopyToClipboard = async () => {
+    if (!note || !editor) return
+
+    try {
+      // 현재 에디터 내용 가져오기
+      const currentHtmlContent = editor.getHTML()
+      const plainContent = convertHtmlToPlainText(currentHtmlContent)
+      const textToCopy = `${title}\n\n${plainContent}`
+
+      // 클립보드에 복사
+      await navigator.clipboard.writeText(textToCopy)
+
+      // 복사 성공 상태로 변경
+      setIsCopied(true)
+
+      // 2초 후 원래 아이콘으로 복구
+      setTimeout(() => {
+        setIsCopied(false)
+      }, 2000)
+    } catch (error) {
+      console.error('복사 중 오류 발생:', error)
+      alert('복사에 실패했습니다. 다시 시도해주세요.')
+    }
+  }
+
+  // TXT 파일로 다운로드
+  const handleDownloadTxt = async () => {
+    if (!note || !editor) return
+
+    try {
+      // 1. 대기 중인 저장이 있으면 즉시 실행
+      if (debouncedSaveRef.current?.flush) {
+        debouncedSaveRef.current.flush()
+        // 저장 완료를 위한 짧은 대기
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+
+      // 2. 현재 에디터 내용 가져오기
+      const currentHtmlContent = editor.getHTML()
+
+      // 3. 최신 변경사항 확실하게 저장
+      await onSave(note.id, {
+        content: currentHtmlContent,
+        title: title
+      })
+
+      // 4. 다운로드 진행
+      const plainContent = convertHtmlToPlainText(currentHtmlContent)
+      const txtContent = `${title}\n\n${plainContent}`
+
+      // Blob 생성 (BOM 추가하여 한글 깨짐 방지)
+      const blob = new Blob(['\ufeff' + txtContent], { type: 'text/plain;charset=utf-8' })
+
+      // 다운로드 링크 생성
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${title || '제목 없음'}.txt`
+
+      // 다운로드 실행
+      document.body.appendChild(link)
+      link.click()
+
+      // 정리
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('다운로드 중 오류 발생:', error)
+      alert('다운로드에 실패했습니다. 다시 시도해주세요.')
     }
   }
 
@@ -668,12 +927,12 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
       {/* 제목 입력 */}
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-3">
-          {/* 메인 메모 설정 버튼 */}
+          {/* 즐겨찾기 버튼 */}
           <div className="relative group">
             <button
-              onClick={handleSetMainNote}
+              onClick={handleToggleFavorite}
               className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
-              aria-label="메인 메모로 지정"
+              aria-label="즐겨찾기"
             >
               <svg
                 className={`w-6 h-6 transition-colors ${
@@ -695,7 +954,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
             </button>
             {/* 툴팁 */}
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-              {isFavorite ? '메인 메모 해제' : '메인으로 지정'}
+              {isFavorite ? '즐겨찾기 해제' : '즐겨찾기'}
             </div>
           </div>
 
@@ -707,6 +966,78 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
             placeholder="제목을 입력하세요"
             className="flex-1 text-2xl font-bold bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600"
           />
+
+          {/* 클립보드 복사 버튼 */}
+          <div className="relative group">
+            <button
+              onClick={handleCopyToClipboard}
+              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
+              aria-label="클립보드에 복사"
+            >
+              {isCopied ? (
+                // 복사 완료 아이콘 (체크 표시)
+                <svg
+                  className="w-6 h-6 text-green-500 dark:text-green-400 transition-colors"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                  />
+                </svg>
+              ) : (
+                // 기본 복사 아이콘
+                <svg
+                  className="w-6 h-6 text-gray-400 dark:text-gray-600 hover:text-green-500 dark:hover:text-green-400 transition-colors"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
+                </svg>
+              )}
+            </button>
+            {/* 툴팁 */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+              {isCopied ? '복사 완료!' : '클립보드에 복사'}
+            </div>
+          </div>
+
+          {/* TXT 다운로드 버튼 */}
+          <div className="relative group">
+            <button
+              onClick={handleDownloadTxt}
+              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
+              aria-label="TXT 다운로드"
+            >
+              <svg
+                className="w-6 h-6 text-gray-400 dark:text-gray-600 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+            </button>
+            {/* 툴팁 */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+              TXT 다운로드
+            </div>
+          </div>
 
           {/* 삭제 버튼 */}
           <button

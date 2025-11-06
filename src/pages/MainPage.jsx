@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Header from '../components/common/Header'
@@ -6,7 +6,7 @@ import Sidebar from '../components/sidebar/Sidebar'
 import TabBar from '../components/tabs/TabBar'
 import Editor from '../components/editor/Editor'
 import { getCurrentUser } from '../services/auth'
-import { getNotes, createNote, updateNote, deleteNote, reorderNotes } from '../services/notes'
+import { getNotes, createNote, updateNote, deleteNote, reorderNotes, toggleFavorite } from '../services/notes'
 import { getFolders, createFolder, updateFolder, deleteFolder, buildFolderTree, reorderFolders } from '../services/folders'
 import { useAuthStore } from '../stores/authStore'
 
@@ -19,9 +19,6 @@ function MainPage() {
   const [activeTabId, setActiveTabId] = useState(null) // 현재 활성 탭 ID
   const [selectedFolderId, setSelectedFolderId] = useState(null) // 선택된 폴더 ID
   const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  // 메인 메모 자동 열기 실행 여부 추적
-  const hasAutoOpenedMainNote = useRef(false)
 
   // 사용자 이름 추출 (이메일의 @ 앞부분)
   const userName = user?.email ? user.email.split('@')[0] : 'User'
@@ -79,28 +76,6 @@ function MainPage() {
     enabled: !!user?.id,
     staleTime: 0
   })
-
-  // 메인 메모 자동 열기 (최초 로드 시)
-  useEffect(() => {
-    // 이미 자동 열기를 실행했거나, 로딩 중이거나, 열린 탭이 있으면 스킵
-    if (hasAutoOpenedMainNote.current || notesLoading || openedNotes.length > 0) {
-      return
-    }
-
-    // 메모가 로드되었고, 메인 메모가 있으면 자동으로 열기
-    if (notes.length > 0) {
-      const mainNote = notes.find(note => note.data.is_favorite === true)
-      if (mainNote) {
-        console.log('메인 메모 자동 열기:', mainNote.data.title)
-        setOpenedNotes([mainNote.id])
-        setActiveTabId(mainNote.id)
-        hasAutoOpenedMainNote.current = true
-      } else {
-        // 메인 메모가 없어도 시도는 했으므로 플래그 설정
-        hasAutoOpenedMainNote.current = true
-      }
-    }
-  }, [notes, notesLoading, openedNotes])
 
   // 열린 탭들의 실제 메모 객체 가져오기
   const openedNotesData = openedNotes
@@ -322,6 +297,15 @@ function MainPage() {
     }
   }
 
+  const handleToggleFavorite = async (noteId) => {
+    const { note, error } = await toggleFavorite(noteId)
+    if (error) {
+      alert(`즐겨찾기 변경 실패: ${error}`)
+    } else {
+      queryClient.invalidateQueries(['notes'])
+    }
+  }
+
   const handleUpdateNote = (updates) => {
     // 에디터 내부 로컬 상태만 업데이트 (사이드바는 변경 안됨)
     // 실제 저장은 handleSaveNote에서만 수행
@@ -367,7 +351,7 @@ function MainPage() {
     }
   }
 
-  // 메모 순서 변경
+  // 메모 순서 변경 (위로/아래로)
   const handleReorderNote = async (noteId, targetNoteId, position) => {
     console.log('🔷 [MainPage] handleReorderNote 호출:', { noteId, targetNoteId, position })
     const { success, error } = await reorderNotes(noteId, targetNoteId, position, notes)
@@ -417,6 +401,7 @@ function MainPage() {
           onNewNote={handleNewNote}
           onDeleteNote={handleDeleteNote}
           onRenameNote={handleRenameNote}
+          onToggleFavorite={handleToggleFavorite}
           folders={folderTree}
           selectedFolderId={selectedFolderId}
           onFolderSelect={handleFolderSelect}

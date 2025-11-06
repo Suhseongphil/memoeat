@@ -10,7 +10,7 @@ export const setCurrentDraggedItem = (item) => {
 }
 
 // 간단한 메모 아이템 컴포넌트 (VSCode 탐색기 스타일)
-export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNote, onRenameNote, onMoveNote, onReorderNote, level }) {
+export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNote, onRenameNote, onToggleFavorite, onMoveNote, onReorderNote, level }) {
   const noteData = note.data
   const isSelected = note.id === selectedNoteId
   const [isEditing, setIsEditing] = useState(false)
@@ -22,143 +22,6 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
   const menuRef = useRef(null)
   const buttonRef = useRef(null)
   const inputRef = useRef(null)
-
-  // HTML5 Drag & Drop - 드래그 시작
-  const handleDragStart = (e) => {
-    if (isEditing) {
-      e.preventDefault()
-      return
-    }
-
-    setIsDragging(true)
-    console.log('🔵 메모 드래그 시작:', note.id, noteData.title)
-
-    // 드래그 데이터 설정
-    const dragData = {
-      type: 'NOTE',
-      id: note.id,
-      data: noteData
-    }
-
-    // 모듈 변수에 저장 (dragOver에서 사용)
-    setCurrentDraggedItem(dragData)
-
-    e.dataTransfer.setData('application/json', JSON.stringify(dragData))
-    e.dataTransfer.effectAllowed = 'move'
-
-    // 드래그 이미지 커스터마이징 (선택사항)
-    e.dataTransfer.setDragImage(e.currentTarget, 20, 20)
-  }
-
-  // HTML5 Drag & Drop - 드래그 종료
-  const handleDragEnd = (e) => {
-    setIsDragging(false)
-    setCurrentDraggedItem(null) // 모듈 변수 초기화
-    console.log('🔵 메모 드래그 종료:', note.id)
-  }
-
-  // HTML5 Drag & Drop - 순서 변경을 위한 드래그 오버
-  const handleDragOverForReorder = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-
-    // 전역 변수에서 드래그 중인 아이템 가져오기
-    const item = currentDraggedItem
-
-    if (!item) {
-      e.dataTransfer.dropEffect = 'move'
-      return
-    }
-
-    // 메모만 순서 변경 가능
-    if (item.type !== 'NOTE') {
-      e.dataTransfer.dropEffect = 'none'
-      setDropPosition(null)
-      return
-    }
-
-    // 자기 자신에게는 드롭 불가
-    if (item.id === note.id) {
-      e.dataTransfer.dropEffect = 'none'
-      setDropPosition(null)
-      return
-    }
-
-    // 같은 폴더 내에서만 순서 변경 가능
-    if (item.data.folder_id !== noteData.folder_id) {
-      e.dataTransfer.dropEffect = 'none'
-      setDropPosition(null)
-      return
-    }
-
-    // 드롭 위치 계산 (상단/하단)
-    const rect = e.currentTarget.getBoundingClientRect()
-    const midpoint = rect.top + rect.height / 2
-    const position = e.clientY < midpoint ? 'before' : 'after'
-
-    setDropPosition(position)
-    e.dataTransfer.dropEffect = 'move'
-  }
-
-  // HTML5 Drag & Drop - 드래그 나감
-  const handleDragLeaveForReorder = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-
-    // 자식 요소로 이동하는 경우 무시 (dropPosition 유지)
-    if (e.currentTarget.contains(e.relatedTarget)) {
-      return
-    }
-
-    setDropPosition(null)
-  }
-
-  // HTML5 Drag & Drop - 순서 변경 드롭
-  const handleDropForReorder = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-
-    const position = dropPosition
-    setDropPosition(null)
-
-    console.log('🎯 [NoteItem] 드롭 이벤트:', { position, targetNoteId: note.id })
-
-    if (!position) {
-      console.log('⚠️ [NoteItem] position 없음, 드롭 취소')
-      return
-    }
-
-    try {
-      const data = e.dataTransfer.getData('application/json')
-      if (!data) {
-        console.log('⚠️ [NoteItem] 드래그 데이터 없음')
-        return
-      }
-
-      const item = JSON.parse(data)
-      console.log('🎯 [NoteItem] 파싱된 아이템:', { type: item.type, id: item.id, title: item.data?.title })
-
-      // 메모 순서 변경
-      if (item.type === 'NOTE' && item.id !== note.id && item.data.folder_id === noteData.folder_id) {
-        console.log('✅ [NoteItem] onReorderNote 호출:', {
-          draggedNoteId: item.id,
-          draggedTitle: item.data?.title,
-          targetNoteId: note.id,
-          targetTitle: noteData.title,
-          position
-        })
-        onReorderNote?.(item.id, note.id, position)
-      } else {
-        console.log('⚠️ [NoteItem] 조건 불만족:', {
-          isNote: item.type === 'NOTE',
-          isDifferent: item.id !== note.id,
-          sameFolder: item.data.folder_id === noteData.folder_id
-        })
-      }
-    } catch (err) {
-      console.error('❌ [NoteItem] 순서 변경 드롭 오류:', err)
-    }
-  }
 
   // 메뉴 위치 계산 및 열기 공통 로직
   const openMenu = (clientX, clientY) => {
@@ -249,6 +112,12 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
     }
   }
 
+  // 즐겨찾기 해제
+  const handleToggleFavorite = () => {
+    onToggleFavorite?.(note.id)
+    setShowMenu(false)
+  }
+
   // 메모 삭제
   const handleDelete = () => {
     if (confirm('이 메모를 삭제하시겠습니까?')) {
@@ -257,34 +126,106 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
     setShowMenu(false)
   }
 
-  // 클릭 핸들러 - 드래그와 구분
+  // 드래그 시작
+  const handleDragStart = (e) => {
+    if (isEditing) {
+      e.preventDefault()
+      return
+    }
+
+    setIsDragging(true)
+    console.log('🔵 메모 드래그 시작:', note.id, noteData.title)
+
+    const dragData = {
+      type: 'NOTE',
+      id: note.id,
+      data: noteData
+    }
+
+    setCurrentDraggedItem(dragData)
+    e.dataTransfer.setData('application/json', JSON.stringify(dragData))
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  // 드래그 종료
+  const handleDragEnd = (e) => {
+    setIsDragging(false)
+    setCurrentDraggedItem(null)
+    console.log('🔵 메모 드래그 종료:', note.id)
+  }
+
+  // 드래그 오버 (순서 변경)
+  const handleDragOverForReorder = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const item = currentDraggedItem
+    if (!item || item.type !== 'NOTE' || item.id === note.id) {
+      return
+    }
+
+    // 같은 폴더의 메모끼리만 순서 변경 가능
+    if (item.data.folder_id !== noteData.folder_id) {
+      return
+    }
+
+    const rect = e.currentTarget.getBoundingClientRect()
+    const relativeY = e.clientY - rect.top
+    const height = rect.height
+
+    const position = relativeY < height / 2 ? 'before' : 'after'
+    setDropPosition(position)
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  // 드래그 나감
+  const handleDragLeaveForReorder = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.currentTarget.contains(e.relatedTarget)) {
+      return
+    }
+    setDropPosition(null)
+  }
+
+  // 드롭 (순서 변경)
+  const handleDropForReorder = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const position = dropPosition
+    setDropPosition(null)
+
+    if (!position) return
+
+    try {
+      const data = e.dataTransfer.getData('application/json')
+      if (!data) return
+
+      const item = JSON.parse(data)
+
+      if (item.type === 'NOTE' && item.id !== note.id && item.data.folder_id === noteData.folder_id) {
+        console.log('✅ [NoteItem] onReorderNote 호출:', item.id, '->', note.id, position)
+        onReorderNote?.(item.id, note.id, position)
+      }
+    } catch (err) {
+      console.error('❌ [NoteItem] 드롭 처리 오류:', err)
+    }
+  }
+
+  // 클릭 핸들러
   const handleClick = (e) => {
-    // 드래그 중이 아닐 때만 클릭 처리
     if (!isEditing && !isDragging) {
       onNoteSelect(note.id)
     }
   }
 
-  // 마우스 다운 핸들러
-  const handleMouseDown = (e) => {
-    // 우클릭이면 무시
-    if (e.button === 2) return
-    // 왼쪽 클릭이면 드래그 준비
-    e.stopPropagation()
-  }
-
   return (
     <div className="relative">
-      {/* 상단 드롭 인디케이터 - 개선된 시각적 효과 */}
+      {/* 상단 드롭 인디케이터 */}
       {dropPosition === 'before' && (
         <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
-          <div className="h-1 bg-orange-500 dark:bg-indigo-500 animate-pulse shadow-lg" />
-          <div className="absolute top-0 left-0 right-0 h-8 bg-orange-100 dark:bg-indigo-900/40 opacity-60 -translate-y-1/2" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div className="px-3 py-1 bg-orange-500 dark:bg-indigo-500 text-white text-xs font-semibold rounded-full shadow-lg whitespace-nowrap">
-              ↑ 위에 놓기
-            </div>
-          </div>
+          <div className="h-0.5 bg-orange-500 dark:bg-indigo-500" />
         </div>
       )}
 
@@ -296,19 +237,23 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
         onDragLeave={handleDragLeaveForReorder}
         onDrop={handleDropForReorder}
         onContextMenu={handleContextMenu}
-        data-note-item
         onClick={handleClick}
         className={`
           relative flex items-center px-2 py-1 transition-all duration-200 group
           ${isSelected ? 'bg-orange-100 dark:bg-indigo-900/30' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'}
-          ${isDragging ? 'opacity-30 cursor-grabbing scale-95' : 'cursor-grab hover:scale-[1.01]'}
-          ${dropPosition ? 'ring-2 ring-orange-300 dark:ring-indigo-600' : ''}
+          ${isDragging ? 'opacity-30 cursor-grabbing' : 'cursor-pointer'}
         `}
         style={{
           paddingLeft: `${level * 16 + 8}px`,
           userSelect: 'none'
         }}
       >
+      {/* 하단 드롭 인디케이터 */}
+      {dropPosition === 'after' && (
+        <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
+          <div className="h-0.5 bg-orange-500 dark:bg-indigo-500" />
+        </div>
+      )}
       {/* 파일 아이콘 */}
       <svg
         className="w-4 h-4 mr-2 flex-shrink-0 text-gray-500 dark:text-gray-400"
@@ -348,7 +293,7 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
             {noteData.title || '제목 없음'}
           </span>
 
-          {/* 메인 메모 아이콘 (제목 오른쪽) */}
+          {/* 즐겨찾기 아이콘 (제목 오른쪽) */}
           {noteData.is_favorite && (
             <div className="relative group/star">
               <svg
@@ -359,7 +304,7 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
               </svg>
               {/* 툴팁 */}
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover/star:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-                메인 메모
+                즐겨찾기
               </div>
             </div>
           )}
@@ -416,6 +361,22 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
             </svg>
             제목 변경
           </button>
+          {noteData.is_favorite && (
+            <button
+              onClick={handleToggleFavorite}
+              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                />
+              </svg>
+              즐겨찾기 해제
+            </button>
+          )}
           <button
             onClick={handleDelete}
             className="w-full flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
@@ -435,19 +396,6 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
         document.body
       )}
       </div>
-
-      {/* 하단 드롭 인디케이터 - 개선된 시각적 효과 */}
-      {dropPosition === 'after' && (
-        <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
-          <div className="h-1 bg-orange-500 dark:bg-indigo-500 animate-pulse shadow-lg" />
-          <div className="absolute bottom-0 left-0 right-0 h-8 bg-orange-100 dark:bg-indigo-900/40 opacity-60 translate-y-1/2" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
-            <div className="px-3 py-1 bg-orange-500 dark:bg-indigo-500 text-white text-xs font-semibold rounded-full shadow-lg whitespace-nowrap">
-              ↓ 아래에 놓기
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
