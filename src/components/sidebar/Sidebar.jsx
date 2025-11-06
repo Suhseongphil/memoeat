@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import FolderTree from './FolderTree'
 import { NoteItemSimple, currentDraggedItem } from './NoteList'
 
 // 루트 드롭존 컴포넌트
-function RootDropZone({ userName, onDrop, notes }) {
+function RootDropZone({ userName, onDrop, notes, onNewFolder }) {
   const [isOver, setIsOver] = useState(false)
   const [canDrop, setCanDrop] = useState(false)
 
@@ -75,7 +76,7 @@ function RootDropZone({ userName, onDrop, notes }) {
   const isActive = isOver && canDrop
 
   return (
-    <div className="p-4 pb-3">
+    <div className="p-4 pb-3 group">
       <div
         onDragOver={handleDragOver}
         onDragEnter={handleDragEnter}
@@ -102,6 +103,28 @@ function RootDropZone({ userName, onDrop, notes }) {
           <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
         </svg>
         <span className="flex-1 text-base">{userName}</span>
+
+        {/* 새 폴더 추가 버튼 */}
+        {!isActive && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onNewFolder(null)
+            }}
+            className="ml-2 p-1.5 rounded-lg hover:bg-orange-200 dark:hover:bg-indigo-700 transition-all"
+            title="새 폴더"
+          >
+            <svg
+              className="w-4 h-4 text-gray-700 dark:text-gray-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+        )}
+
         {isActive && (
           <svg
             className="w-5 h-5 text-orange-600 dark:text-indigo-400 animate-bounce"
@@ -153,10 +176,6 @@ function SidebarContent({
   userName,
   sidebarPosition = 'left'
 }) {
-  const [showContextMenu, setShowContextMenu] = useState(false)
-  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 })
-  const menuRef = useRef(null)
-
   const handleNoteSelect = (noteId) => {
     onNoteSelect(noteId)
     // 모바일에서는 메모 선택 후 사이드바 닫기
@@ -182,40 +201,48 @@ function SidebarContent({
     }
   }
 
-  // 사이드바 우클릭 메뉴
+  // 사이드바 우클릭 메뉴 상태
+  const [showContextMenu, setShowContextMenu] = useState(false)
+  const [contextMenuPosition, setContextMenuPosition] = useState({ top: 0, left: 0 })
+  const contextMenuRef = useRef(null)
+
+  // 사이드바 빈 공간 우클릭
   const handleSidebarContextMenu = (e) => {
-    // 폴더나 메모를 우클릭한 경우가 아닐 때만 사이드바 메뉴 표시
-    const target = e.target
-    if (target.closest('[data-folder-item]') || target.closest('[data-note-item]')) {
+    // 폴더나 메모 항목이 아닌 경우에만 처리
+    if (e.target.closest('[data-folder-item]') || e.target.closest('[data-note-item]')) {
       return
     }
 
     e.preventDefault()
     e.stopPropagation()
-    setMenuPosition({ x: e.clientX, y: e.clientY })
+
+    const menuWidth = 192
+    const menuHeight = 60
+
+    let top = e.clientY
+    let left = e.clientX
+
+    // 화면 경계 체크
+    if (top + menuHeight > window.innerHeight) {
+      top = e.clientY - menuHeight
+    }
+    if (left + menuWidth > window.innerWidth) {
+      left = e.clientX - menuWidth
+    }
+    if (left < 0) {
+      left = 8
+    }
+    if (top < 0) {
+      top = 8
+    }
+
+    setContextMenuPosition({ top, left })
     setShowContextMenu(true)
   }
 
-  // 외부 클릭 시 메뉴 닫기
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setShowContextMenu(false)
-      }
-    }
-
-    if (showContextMenu) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showContextMenu])
-
   // 새 폴더 생성
   const handleCreateFolder = () => {
-    onNewFolder(null) // 루트 레벨 폴더 생성
+    onNewFolder(null)
     setShowContextMenu(false)
   }
 
@@ -302,6 +329,7 @@ function SidebarContent({
             userName={userName}
             onDrop={handleRootDrop}
             notes={notes}
+            onNewFolder={onNewFolder}
           />
 
           {/* 폴더 트리 */}
@@ -346,31 +374,47 @@ function SidebarContent({
               ))}
             </div>
           )}
-
-          {/* 사이드바 우클릭 메뉴 */}
-          {showContextMenu && (
-            <div
-              ref={menuRef}
-              className="fixed z-50 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1"
-              style={{
-                top: `${menuPosition.y}px`,
-                left: `${menuPosition.x}px`
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                onClick={handleCreateFolder}
-                className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                새 폴더
-              </button>
-            </div>
-          )}
         </div>
       </aside>
+
+      {/* 사이드바 우클릭 메뉴 - Portal로 body에 직접 렌더링 */}
+      {showContextMenu && createPortal(
+        <>
+          {/* 투명 오버레이 */}
+          <div
+            className="fixed inset-0 z-[9998]"
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowContextMenu(false)
+            }}
+            style={{ pointerEvents: 'auto' }}
+          />
+          <div
+            ref={contextMenuRef}
+            className="fixed z-[10000] w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1"
+            style={{
+              top: `${contextMenuPosition.top}px`,
+              left: `${contextMenuPosition.left}px`,
+              pointerEvents: 'auto'
+            }}
+          >
+            <button
+              onClick={handleCreateFolder}
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-indigo-900/30 flex items-center transition-colors"
+            >
+              <svg
+                className="w-4 h-4 mr-3 text-gray-600 dark:text-gray-400"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+              </svg>
+              새 폴더
+            </button>
+          </div>
+        </>,
+        document.body
+      )}
     </>
   )
 }

@@ -103,23 +103,80 @@ export const updateFolder = async (folderId, updates) => {
 }
 
 /**
- * 폴더 삭제
+ * 폴더 삭제 (하위 메모와 하위 폴더도 함께 삭제)
  */
 export const deleteFolder = async (folderId) => {
   try {
-    const { error } = await supabase
+    console.log('🗑️ [deleteFolder] 폴더 삭제 시작:', folderId)
+
+    // 1. 먼저 해당 폴더에 속한 모든 메모 조회 후 삭제
+    const { data: notesToDelete, error: fetchNotesError } = await supabase
+      .from('notes')
+      .select('id, data')
+      .eq('data->>folder_id', folderId)
+
+    if (fetchNotesError) {
+      console.error('❌ [deleteFolder] 메모 조회 오류:', fetchNotesError)
+      return { success: false, error: fetchNotesError.message }
+    }
+
+    console.log(`📝 [deleteFolder] 삭제할 메모 ${notesToDelete?.length || 0}개 발견`)
+
+    // 메모 삭제
+    if (notesToDelete && notesToDelete.length > 0) {
+      const noteIds = notesToDelete.map(note => note.id)
+      const { error: deleteNotesError } = await supabase
+        .from('notes')
+        .delete()
+        .in('id', noteIds)
+
+      if (deleteNotesError) {
+        console.error('❌ [deleteFolder] 메모 삭제 오류:', deleteNotesError)
+        return { success: false, error: deleteNotesError.message }
+      }
+      console.log(`✅ [deleteFolder] ${noteIds.length}개 메모 삭제 완료`)
+    }
+
+    // 2. 하위 폴더들도 재귀적으로 삭제
+    const { data: childFolders, error: fetchFoldersError } = await supabase
+      .from('folders')
+      .select('id, data')
+      .eq('data->>parent_id', folderId)
+
+    if (fetchFoldersError) {
+      console.error('❌ [deleteFolder] 하위 폴더 조회 오류:', fetchFoldersError)
+      return { success: false, error: fetchFoldersError.message }
+    }
+
+    console.log(`📁 [deleteFolder] 삭제할 하위 폴더 ${childFolders?.length || 0}개 발견`)
+
+    // 하위 폴더들 재귀적으로 삭제
+    if (childFolders && childFolders.length > 0) {
+      for (const childFolder of childFolders) {
+        const { success, error } = await deleteFolder(childFolder.id)
+        if (!success) {
+          console.error('❌ [deleteFolder] 하위 폴더 삭제 실패:', error)
+          return { success: false, error }
+        }
+      }
+      console.log(`✅ [deleteFolder] ${childFolders.length}개 하위 폴더 삭제 완료`)
+    }
+
+    // 3. 마지막으로 폴더 자체 삭제
+    const { error: folderError } = await supabase
       .from('folders')
       .delete()
       .eq('id', folderId)
 
-    if (error) {
-      console.error('폴더 삭제 오류:', error)
-      return { success: false, error: error.message }
+    if (folderError) {
+      console.error('❌ [deleteFolder] 폴더 삭제 오류:', folderError)
+      return { success: false, error: folderError.message }
     }
 
+    console.log('✅ [deleteFolder] 폴더 삭제 완료:', folderId)
     return { success: true, error: null }
   } catch (error) {
-    console.error('폴더 삭제 예외:', error)
+    console.error('❌ [deleteFolder] 폴더 삭제 예외:', error)
     return { success: false, error: error.message }
   }
 }

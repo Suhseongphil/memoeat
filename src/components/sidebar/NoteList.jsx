@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 // 드래그 중인 아이템을 저장하는 모듈 변수 (export하여 다른 모듈과 공유)
 export let currentDraggedItem = null
@@ -15,9 +16,11 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(noteData.title || '제목 없음')
   const [showMenu, setShowMenu] = useState(false)
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [dropPosition, setDropPosition] = useState(null) // 'before' | 'after' | null
   const menuRef = useRef(null)
+  const buttonRef = useRef(null)
   const inputRef = useRef(null)
 
   // HTML5 Drag & Drop - 드래그 시작
@@ -157,29 +160,67 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
     }
   }
 
-  // 우클릭 메뉴
-  const handleContextMenu = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
+  // 메뉴 위치 계산 및 열기 공통 로직
+  const openMenu = (clientX, clientY) => {
+    const menuWidth = 192 // w-48 = 192px
+    const menuHeight = 120 // 대략적인 메뉴 높이 (메모는 2개 항목)
+
+    // 화면 경계 체크
+    let top = clientY
+    let left = clientX
+
+    // 화면 아래로 넘어가면 위로 표시
+    if (top + menuHeight > window.innerHeight) {
+      top = clientY - menuHeight
+    }
+
+    // 화면 오른쪽으로 넘어가면 왼쪽 정렬
+    if (left + menuWidth > window.innerWidth) {
+      left = clientX - menuWidth
+    }
+
+    // 화면 왼쪽으로 넘어가면 오른쪽 정렬
+    if (left < 0) {
+      left = 8
+    }
+
+    // 화면 위로 넘어가면 아래로 조정
+    if (top < 0) {
+      top = 8
+    }
+
+    setMenuPosition({ top, left })
     setShowMenu(true)
   }
 
-  // 외부 클릭 시 메뉴 닫기
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setShowMenu(false)
-      }
-    }
+  // ... 버튼 클릭으로 메뉴 토글
+  const handleMenuToggle = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
 
     if (showMenu) {
-      document.addEventListener('mousedown', handleClickOutside)
+      setShowMenu(false)
+      return
     }
 
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+    if (!buttonRef.current) {
+      return
     }
-  }, [showMenu])
+
+    const rect = buttonRef.current.getBoundingClientRect()
+    openMenu(rect.right, rect.bottom + 4)
+  }
+
+  // 우클릭으로 메뉴 열기
+  const handleContextMenu = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    openMenu(e.clientX, e.clientY)
+    console.log('🟢 [NoteItem] 메뉴 열기 완료!')
+  }
+
+  // 외부 클릭은 오버레이로 처리하므로 별도 useEffect 불필요
 
   // 이름 변경 시작
   const startRename = () => {
@@ -254,11 +295,11 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
         onDragOver={handleDragOverForReorder}
         onDragLeave={handleDragLeaveForReorder}
         onDrop={handleDropForReorder}
+        onContextMenu={handleContextMenu}
         data-note-item
         onClick={handleClick}
-        onContextMenu={handleContextMenu}
         className={`
-          relative flex items-center px-2 py-1 transition-all duration-200
+          relative flex items-center px-2 py-1 transition-all duration-200 group
           ${isSelected ? 'bg-orange-100 dark:bg-indigo-900/30' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'}
           ${isDragging ? 'opacity-30 cursor-grabbing scale-95' : 'cursor-grab hover:scale-[1.01]'}
           ${dropPosition ? 'ring-2 ring-orange-300 dark:ring-indigo-600' : ''}
@@ -316,20 +357,45 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
               <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
             </svg>
           )}
+
+          {/* ... 메뉴 버튼 (hover 시 표시) */}
+          <button
+            ref={buttonRef}
+            onClick={handleMenuToggle}
+            className="ml-1 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-opacity"
+          >
+            <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="5" r="2" />
+              <circle cx="12" cy="12" r="2" />
+              <circle cx="12" cy="19" r="2" />
+            </svg>
+          </button>
         </>
       )}
 
-      {/* 우클릭 메뉴 */}
-      {showMenu && (
-        <div
-          ref={menuRef}
-          className="absolute z-50 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1"
-          style={{
-            top: '100%',
-            right: '0'
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
+      {/* 드롭다운 메뉴 - Portal로 body에 직접 렌더링 */}
+      {showMenu && createPortal(
+        <>
+          {/* 투명 오버레이 - 뒤의 요소들과 메뉴 분리 */}
+          <div
+            className="fixed inset-0 z-[9998]"
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowMenu(false)
+            }}
+            style={{ pointerEvents: 'auto' }}
+          />
+          <div
+            ref={menuRef}
+            className="fixed z-[10000] w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1"
+            style={{
+              top: `${menuPosition.top}px`,
+              left: `${menuPosition.left}px`,
+              pointerEvents: 'auto'
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
           <button
             onClick={startRename}
             className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -359,6 +425,8 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
             삭제
           </button>
         </div>
+        </>,
+        document.body
       )}
       </div>
 

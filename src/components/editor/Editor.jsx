@@ -1,15 +1,22 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
+import Document from '@tiptap/extension-document'
+import Paragraph from '@tiptap/extension-paragraph'
+import Text from '@tiptap/extension-text'
+import Bold from '@tiptap/extension-bold'
+import Italic from '@tiptap/extension-italic'
+import Heading from '@tiptap/extension-heading'
+import History from '@tiptap/extension-history'
 import TextAlign from '@tiptap/extension-text-align'
-import TextStyle from '@tiptap/extension-text-style'
-import Color from '@tiptap/extension-color'
-import FontFamily from '@tiptap/extension-font-family'
-import Underline from '@tiptap/extension-underline'
-import Link from '@tiptap/extension-link'
+import { Color } from '@tiptap/extension-color'
+import { FontFamily } from '@tiptap/extension-font-family'
+import { TextStyle } from '@tiptap/extension-text-style'
+import { Link } from '@tiptap/extension-link'
+import { Underline } from '@tiptap/extension-underline'
 import { debounce } from 'lodash'
 import { toggleFavorite } from '../../services/notes'
 import LinkModal from './LinkModal'
+import { FontSize } from './extensions/FontSize'
 import './tiptap.css'
 
 function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
@@ -22,42 +29,84 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
   const [showSpecialCharPicker, setShowSpecialCharPicker] = useState(false)
   const [showAlignmentPicker, setShowAlignmentPicker] = useState(false)
 
+  // 드롭다운 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // 드롭다운 버튼이나 드롭다운 내부를 클릭한 경우는 무시
+      if (event.target.closest('.dropdown-container')) {
+        return
+      }
+      // 모든 드롭다운 닫기
+      setShowTextColorPicker(false)
+      setShowFontSizePicker(false)
+      setShowFontFamilyPicker(false)
+      setShowSpecialCharPicker(false)
+      setShowAlignmentPicker(false)
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
   // Tiptap 에디터 초기화
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [1, 2, 3]
-        }
+      // 필수 기본 확장 기능
+      Document,
+      Paragraph,
+      Text,
+
+      // 서식 기능
+      Bold,
+      Italic,
+      Underline,
+
+      // 제목
+      Heading.configure({
+        levels: [1, 2, 3]
       }),
+
+      // 실행 취소/다시 실행 (메모별 독립적인 히스토리)
+      History.configure({
+        depth: 100,  // 최대 100개의 히스토리 유지
+        newGroupDelay: 500  // 500ms 내 변경사항은 하나의 그룹으로
+      }),
+
+      // 정렬
       TextAlign.configure({
         types: ['heading', 'paragraph'],
         alignments: ['left', 'center', 'right', 'justify']
       }),
+
+      // 텍스트 스타일
       TextStyle,
       Color,
       FontFamily.configure({
         types: ['textStyle']
       }),
-      Underline,
+      FontSize,
+
+      // 링크
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
-          class: 'text-blue-600 underline'
+          class: 'text-blue-600 underline cursor-pointer'
         }
       })
     ],
     content: '',
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none max-w-none p-6'
+        class: 'focus:outline-none p-6'
       }
     },
     onUpdate: ({ editor }) => {
       const html = editor.getHTML()
       handleContentChange(html)
     }
-  })
+  }, [note?.id])  // note.id가 변경될 때마다 새로운 에디터 인스턴스 생성
 
   // 자동 저장 함수 (debounce 2초)
   const debouncedSave = useCallback(
@@ -82,13 +131,17 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
       setIsFavorite(note.data.is_favorite || false)
 
       // 에디터 내용이 다를 때만 업데이트 (무한 루프 방지)
-      if (editor.getHTML() !== note.data.content) {
-        editor.commands.setContent(note.data.content || '')
+      const currentContent = editor.getHTML()
+      const newContent = note.data.content || '<p></p>'
+
+      if (currentContent !== newContent) {
+        // 새 내용 설정 (emitUpdate: false로 히스토리에 추가되지 않도록)
+        editor.commands.setContent(newContent, false)
       }
     } else if (!note && editor) {
       setTitle('')
       setIsFavorite(false)
-      editor.commands.setContent('')
+      editor.commands.setContent('<p></p>', false)
     }
   }, [note?.id, editor])
 
@@ -165,18 +218,55 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
     setShowSpecialCharPicker(false)
   }
 
-  // 색상 팔레트
+  // 색상 팔레트 (확장)
   const textColors = [
     { name: '검정', value: '#000000' },
-    { name: '빨강', value: '#EF4444' },
-    { name: '주황', value: '#F97316' },
-    { name: '노랑', value: '#EAB308' },
-    { name: '초록', value: '#22C55E' },
-    { name: '파랑', value: '#3B82F6' },
-    { name: '남색', value: '#6366F1' },
-    { name: '보라', value: '#A855F7' },
-    { name: '분홍', value: '#EC4899' },
+    { name: '진회색', value: '#374151' },
     { name: '회색', value: '#6B7280' },
+    { name: '밝은회색', value: '#9CA3AF' },
+    { name: '흰색', value: '#FFFFFF' },
+
+    { name: '진빨강', value: '#991B1B' },
+    { name: '빨강', value: '#DC2626' },
+    { name: '밝은빨강', value: '#EF4444' },
+    { name: '연빨강', value: '#FCA5A5' },
+    { name: '핑크', value: '#EC4899' },
+
+    { name: '진주황', value: '#9A3412' },
+    { name: '주황', value: '#EA580C' },
+    { name: '밝은주황', value: '#F97316' },
+    { name: '연주황', value: '#FDBA74' },
+    { name: '복숭아', value: '#FBBF24' },
+
+    { name: '진노랑', value: '#854D0E' },
+    { name: '노랑', value: '#CA8A04' },
+    { name: '밝은노랑', value: '#EAB308' },
+    { name: '연노랑', value: '#FDE047' },
+    { name: '레몬', value: '#FEF08A' },
+
+    { name: '진초록', value: '#166534' },
+    { name: '초록', value: '#16A34A' },
+    { name: '밝은초록', value: '#22C55E' },
+    { name: '연초록', value: '#86EFAC' },
+    { name: '민트', value: '#6EE7B7' },
+
+    { name: '진파랑', value: '#1E3A8A' },
+    { name: '파랑', value: '#2563EB' },
+    { name: '밝은파랑', value: '#3B82F6' },
+    { name: '연파랑', value: '#93C5FD' },
+    { name: '하늘', value: '#BAE6FD' },
+
+    { name: '진남색', value: '#3730A3' },
+    { name: '남색', value: '#4F46E5' },
+    { name: '밝은남색', value: '#6366F1' },
+    { name: '연남색', value: '#A5B4FC' },
+    { name: '라벤더', value: '#C4B5FD' },
+
+    { name: '진보라', value: '#6B21A8' },
+    { name: '보라', value: '#9333EA' },
+    { name: '밝은보라', value: '#A855F7' },
+    { name: '연보라', value: '#D8B4FE' },
+    { name: '분홍보라', value: '#F0ABFC' },
   ]
 
   // 글자 크기 옵션
@@ -205,13 +295,44 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
     { name: 'Courier New', value: '"Courier New", monospace' },
   ]
 
-  // 특수문자 목록
+  // 특수문자 목록 (대폭 확장)
   const specialChars = [
-    '★', '☆', '♥', '♡', '●', '○', '■', '□',
-    '▲', '△', '▼', '▽', '◆', '◇', '►', '◀',
-    '※', '◎', '⊙', '◈', '▣', '◐', '◑', '▒',
-    '℃', '℉', '㉿', '№', '㈜', 'Ⓡ', 'ⓒ', '™',
-    '→', '←', '↑', '↓', '↔', '⇒', '⇐', '⇔'
+    // 별/하트
+    '★', '☆', '✦', '✧', '✪', '✫', '✬', '✭', '✮', '✯',
+    '♥', '♡', '❤', '💙', '💚', '💛', '💜', '🧡', '🖤', '🤍',
+
+    // 도형
+    '●', '○', '◉', '◎', '⊙', '⦿', '◐', '◑', '◒', '◓',
+    '■', '□', '▪', '▫', '◾', '◽', '▮', '▯', '▰', '▱',
+    '▲', '△', '▴', '▵', '▶', '▷', '▸', '▹', '►', '▻',
+    '▼', '▽', '▾', '▿', '◀', '◁', '◂', '◃', '◄', '◅',
+    '◆', '◇', '◈', '◊', '♦', '⬥', '⬦', '⬧', '⬨', '⬩',
+
+    // 화살표
+    '→', '←', '↑', '↓', '↔', '↕', '↖', '↗', '↘', '↙',
+    '⇒', '⇐', '⇑', '⇓', '⇔', '⇕', '⇖', '⇗', '⇘', '⇙',
+    '➔', '➘', '➙', '➚', '➛', '➜', '➝', '➞', '➟', '➠',
+
+    // 체크/기호
+    '✓', '✔', '✕', '✖', '✗', '✘', '☑', '☒', '✅', '❌',
+    '※', '‼', '⁉', '❓', '❔', '❕', '❗', '⚠', '⛔', '🚫',
+
+    // 손가락/이모지
+    '☝', '👆', '👇', '👈', '👉', '👍', '👎', '✊', '✋', '👌',
+    '😀', '😊', '😂', '😍', '😢', '😭', '😡', '😱', '🤔', '🤗',
+
+    // 기타 기호
+    '℃', '℉', '°', '№', '㈜', '™', '®', '©', '§', '¶',
+    '†', '‡', '※', '‰', '‱', '′', '″', '‴', '¹', '²',
+    '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹', '⁰', '₁', '₂',
+
+    // 통화/수학
+    '₩', '$', '€', '£', '¥', '¢', '฿', '₹', '₽', '₴',
+    '+', '−', '×', '÷', '=', '≠', '≈', '≤', '≥', '∞',
+
+    // 선/구분
+    '─', '━', '│', '┃', '┌', '┐', '└', '┘', '├', '┤',
+    '┬', '┴', '┼', '═', '║', '╔', '╗', '╚', '╝', '╠'
   ]
 
   // 정렬 옵션
@@ -256,7 +377,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
       <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
         <div className="flex items-center gap-2 flex-wrap">
           {/* 글꼴 */}
-          <div className="relative">
+          <div className="relative group dropdown-container">
             <button
               onClick={() => {
                 setShowFontFamilyPicker(!showFontFamilyPicker)
@@ -265,11 +386,17 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowSpecialCharPicker(false)
                 setShowAlignmentPicker(false)
               }}
-              className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
+              className="p-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
               title="글꼴"
             >
-              글꼴
+              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10M12 3v18M5.5 7h13" />
+              </svg>
             </button>
+            {/* 툴팁 */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+              글꼴
+            </div>
             {showFontFamilyPicker && (
               <div className="absolute top-full mt-1 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[140px]">
                 <div className="flex flex-col gap-1">
@@ -280,7 +407,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                         editor.chain().focus().setFontFamily(font.value).run()
                         setShowFontFamilyPicker(false)
                       }}
-                      className="px-3 py-2 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
+                      className="px-3 py-2 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm text-gray-900 dark:text-gray-100"
                       style={{ fontFamily: font.value }}
                     >
                       {font.name}
@@ -292,7 +419,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
           </div>
 
           {/* 글자 크기 */}
-          <div className="relative">
+          <div className="relative group dropdown-container">
             <button
               onClick={() => {
                 setShowFontSizePicker(!showFontSizePicker)
@@ -301,11 +428,18 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowSpecialCharPicker(false)
                 setShowAlignmentPicker(false)
               }}
-              className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
+              className="p-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
               title="글자 크기"
             >
-              글자크기
+              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <text x="2" y="18" fontSize="18" fontWeight="bold" fill="currentColor">A</text>
+                <text x="12" y="20" fontSize="12" fill="currentColor">A</text>
+              </svg>
             </button>
+            {/* 툴팁 */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+              글자 크기
+            </div>
             {showFontSizePicker && (
               <div className="absolute top-full mt-1 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[100px]">
                 <div className="flex flex-col gap-1">
@@ -313,10 +447,10 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                     <button
                       key={size.value}
                       onClick={() => {
-                        editor.chain().focus().setMark('textStyle', { fontSize: size.value }).run()
+                        editor.chain().focus().setFontSize(size.value).run()
                         setShowFontSizePicker(false)
                       }}
-                      className="px-3 py-1.5 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
+                      className="px-3 py-1.5 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm text-gray-900 dark:text-gray-100"
                       style={{ fontSize: size.value }}
                     >
                       {size.name}
@@ -330,20 +464,28 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
           <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
 
           {/* 굵게 */}
-          <button
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            className={`px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-bold ${
-              editor.isActive('bold') ? 'bg-gray-200 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'
-            }`}
-            title="굵게 (Ctrl+B)"
-          >
-            B
-          </button>
+          <div className="relative group">
+            <button
+              onClick={() => editor.chain().focus().toggleBold().run()}
+              className={`p-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                editor.isActive('bold') ? 'bg-gray-200 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'
+              }`}
+              title="굵게"
+            >
+              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h7.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-3v-3zm3.5 9H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/>
+              </svg>
+            </button>
+            {/* 툴팁 */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+              굵게 (Ctrl+B)
+            </div>
+          </div>
 
           <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
 
           {/* 글자 색상 */}
-          <div className="relative">
+          <div className="relative group dropdown-container">
             <button
               onClick={() => {
                 setShowTextColorPicker(!showTextColorPicker)
@@ -352,14 +494,20 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowSpecialCharPicker(false)
                 setShowAlignmentPicker(false)
               }}
-              className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
+              className="p-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
               title="글자 색상"
             >
-              색상
+              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+              </svg>
             </button>
+            {/* 툴팁 */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+              글자 색상
+            </div>
             {showTextColorPicker && (
-              <div className="absolute top-full mt-1 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
-                <div className="grid grid-cols-5 gap-1">
+              <div className="absolute top-full mt-1 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 w-[420px] max-h-[400px] overflow-y-auto">
+                <div className="grid grid-cols-10 gap-3">
                   {textColors.map((color) => (
                     <button
                       key={color.value}
@@ -367,7 +515,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                         editor.chain().focus().setColor(color.value).run()
                         setShowTextColorPicker(false)
                       }}
-                      className="w-8 h-8 rounded border-2 border-gray-300 dark:border-gray-600 hover:scale-110 transition-transform"
+                      className="w-9 h-9 rounded border-2 border-gray-300 dark:border-gray-600 hover:scale-110 transition-transform"
                       style={{ backgroundColor: color.value }}
                       title={color.name}
                     />
@@ -380,7 +528,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
           <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
 
           {/* 정렬 */}
-          <div className="relative">
+          <div className="relative group dropdown-container">
             <button
               onClick={() => {
                 setShowAlignmentPicker(!showAlignmentPicker)
@@ -389,11 +537,17 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowFontFamilyPicker(false)
                 setShowSpecialCharPicker(false)
               }}
-              className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
+              className="p-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
               title="정렬"
             >
-              정렬
+              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+              </svg>
             </button>
+            {/* 툴팁 */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+              텍스트 정렬
+            </div>
             {showAlignmentPicker && (
               <div className="absolute top-full mt-1 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
                 <div className="flex flex-col gap-1">
@@ -404,7 +558,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                         editor.chain().focus().setTextAlign(align.value).run()
                         setShowAlignmentPicker(false)
                       }}
-                      className={`px-3 py-2 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm flex items-center gap-2 ${
+                      className={`px-3 py-2 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm flex items-center gap-2 text-gray-900 dark:text-gray-100 ${
                         editor.isActive({ textAlign: align.value }) ? 'bg-gray-100 dark:bg-gray-700' : ''
                       }`}
                     >
@@ -420,7 +574,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
           <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
 
           {/* 특수문자 */}
-          <div className="relative">
+          <div className="relative group dropdown-container">
             <button
               onClick={() => {
                 setShowSpecialCharPicker(!showSpecialCharPicker)
@@ -429,19 +583,25 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowFontFamilyPicker(false)
                 setShowAlignmentPicker(false)
               }}
-              className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
+              className="p-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
               title="특수문자"
             >
-              특수문자
+              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M11 15h2v2h-2v-2zm0-8h2v6h-2V7zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
+              </svg>
             </button>
+            {/* 툴팁 */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+              특수문자 삽입
+            </div>
             {showSpecialCharPicker && (
-              <div className="absolute top-full mt-1 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[200px]">
-                <div className="grid grid-cols-8 gap-1">
-                  {specialChars.map((char) => (
+              <div className="absolute top-full mt-1 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 w-[360px] max-h-[400px] overflow-y-auto">
+                <div className="grid grid-cols-10 gap-1">
+                  {specialChars.map((char, index) => (
                     <button
-                      key={char}
+                      key={`${char}-${index}`}
                       onClick={() => insertSpecialChar(char)}
-                      className="w-8 h-8 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
+                      className="w-8 h-8 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-base text-gray-900 dark:text-gray-100"
                       title={char}
                     >
                       {char}
@@ -452,21 +612,22 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
             )}
           </div>
 
-          {/* 링크 */}
-          <button
-            onClick={() => {
-              const url = window.prompt('링크 URL:')
-              if (url) {
-                editor.chain().focus().setLink({ href: url }).run()
-              }
-            }}
-            className={`px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-              editor.isActive('link') ? 'bg-gray-200 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'
-            }`}
-            title="링크 삽입"
-          >
-            링크
-          </button>
+          {/* 링크 - 비활성화 */}
+          <div className="relative group">
+            <button
+              disabled
+              className="p-2 border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-800 opacity-50 cursor-not-allowed"
+              title="링크 (비활성화)"
+            >
+              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+            </button>
+            {/* 툴팁 */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+              링크 (비활성화)
+            </div>
+          </div>
         </div>
 
         {/* 링크 정보 표시 */}
@@ -565,7 +726,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
       </div>
 
       {/* Tiptap 에디터 */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto custom-scrollbar">
         <EditorContent editor={editor} className="h-full" />
       </div>
 

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { NoteItemSimple, currentDraggedItem, setCurrentDraggedItem } from './NoteList'
 
 function FolderItem({
@@ -27,10 +28,12 @@ function FolderItem({
   const [isEditing, setIsEditing] = useState(false)
   const [editName, setEditName] = useState(folder.data.name)
   const [showMenu, setShowMenu] = useState(false)
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [isOver, setIsOver] = useState(false)
   const [dropPosition, setDropPosition] = useState(null) // 'before' | 'after' | 'inside' | null
   const menuRef = useRef(null)
+  const buttonRef = useRef(null)
   const inputRef = useRef(null)
 
   const hasChildren = folder.children && folder.children.length > 0
@@ -251,29 +254,66 @@ function FolderItem({
     toggleExpand(e)
   }
 
-  // 우클릭 메뉴
-  const handleContextMenu = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
+  // 메뉴 위치 계산 및 열기 공통 로직
+  const openMenu = (clientX, clientY) => {
+    const menuWidth = 192 // w-48 = 192px
+    const menuHeight = 150 // 대략적인 메뉴 높이
+
+    // 화면 경계 체크
+    let top = clientY
+    let left = clientX
+
+    // 화면 아래로 넘어가면 위로 표시
+    if (top + menuHeight > window.innerHeight) {
+      top = clientY - menuHeight
+    }
+
+    // 화면 오른쪽으로 넘어가면 왼쪽 정렬
+    if (left + menuWidth > window.innerWidth) {
+      left = clientX - menuWidth
+    }
+
+    // 화면 왼쪽으로 넘어가면 오른쪽 정렬
+    if (left < 0) {
+      left = 8
+    }
+
+    // 화면 위로 넘어가면 아래로 조정
+    if (top < 0) {
+      top = 8
+    }
+
+    setMenuPosition({ top, left })
     setShowMenu(true)
   }
 
-  // 외부 클릭 시 메뉴 닫기
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setShowMenu(false)
-      }
-    }
+  // ... 버튼 클릭으로 메뉴 토글
+  const handleMenuToggle = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
 
     if (showMenu) {
-      document.addEventListener('mousedown', handleClickOutside)
+      setShowMenu(false)
+      return
     }
 
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+    if (!buttonRef.current) {
+      return
     }
-  }, [showMenu])
+
+    const rect = buttonRef.current.getBoundingClientRect()
+    openMenu(rect.right, rect.bottom + 4)
+  }
+
+  // 우클릭으로 메뉴 열기
+  const handleContextMenu = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    openMenu(e.clientX, e.clientY)
+  }
+
+  // 외부 클릭은 오버레이로 처리하므로 별도 useEffect 불필요
 
   // 이름 변경 시작
   const startRename = () => {
@@ -304,7 +344,7 @@ function FolderItem({
 
   // 폴더 삭제
   const handleDelete = () => {
-    if (confirm(`"${folder.data.name}" 폴더를 삭제하시겠습니까?\n\n하위 메모는 삭제되지 않고 폴더 밖으로 이동됩니다.`)) {
+    if (confirm(`"${folder.data.name}" 폴더를 삭제하시겠습니까?\n\n⚠️ 폴더 내의 모든 메모도 함께 삭제됩니다.`)) {
       onDeleteFolder(folder.id)
     }
     setShowMenu(false)
@@ -341,16 +381,16 @@ function FolderItem({
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        onContextMenu={handleContextMenu}
         data-folder-item
         className={`
-          relative flex items-center px-2 py-1 rounded-lg transition-all duration-200
+          relative flex items-center px-2 py-1 rounded-lg transition-all duration-200 group
           ${isSelected ? 'bg-orange-100 dark:bg-indigo-900/30' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'}
           ${isDragging ? 'opacity-30 cursor-grabbing scale-95' : 'cursor-grab hover:scale-[1.01]'}
           ${dropPosition === 'inside' ? 'ring-4 ring-orange-500 dark:ring-indigo-500 bg-orange-50 dark:bg-indigo-900/20 scale-[1.03] shadow-xl' : ''}
         `}
         style={{ paddingLeft: `${level * 16 + 8}px`, userSelect: 'none' }}
         onClick={handleClick}
-        onContextMenu={handleContextMenu}
       >
         {/* 확장/축소 아이콘 */}
         <button
@@ -404,17 +444,44 @@ function FolderItem({
           </span>
         )}
 
-        {/* 우클릭 메뉴 */}
-        {showMenu && (
-          <div
-            ref={menuRef}
-            className="absolute z-50 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1"
-            style={{
-              top: '100%',
-              right: '0'
-            }}
-            onClick={(e) => e.stopPropagation()}
+        {/* ... 메뉴 버튼 (hover 시 표시) */}
+        {!isEditing && (
+          <button
+            ref={buttonRef}
+            onClick={handleMenuToggle}
+            className="ml-1 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-opacity"
           >
+            <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="5" r="2" />
+              <circle cx="12" cy="12" r="2" />
+              <circle cx="12" cy="19" r="2" />
+            </svg>
+          </button>
+        )}
+
+        {/* 드롭다운 메뉴 - Portal로 body에 직접 렌더링 */}
+        {showMenu && createPortal(
+          <>
+            {/* 투명 오버레이 - 뒤의 요소들과 메뉴 분리 */}
+            <div
+              className="fixed inset-0 z-[9998]"
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowMenu(false)
+              }}
+              style={{ pointerEvents: 'auto' }}
+            />
+            <div
+              ref={menuRef}
+              className="fixed z-[10000] w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1"
+              style={{
+                top: `${menuPosition.top}px`,
+                left: `${menuPosition.left}px`,
+                pointerEvents: 'auto'
+              }}
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
             <button
               onClick={handleCreateSubfolder}
               className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -453,6 +520,8 @@ function FolderItem({
               삭제
             </button>
           </div>
+          </>,
+          document.body
         )}
       </div>
 
