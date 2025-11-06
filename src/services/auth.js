@@ -47,12 +47,26 @@ export const signUp = async (email, password) => {
     }
   } catch (error) {
     console.error('SignUp error:', error)
+
+    // 사용자 친화적인 에러 메시지로 변환
+    let errorMessage = '회원가입 중 오류가 발생했습니다.'
+
+    if (error.message.includes('User already registered')) {
+      errorMessage = '이미 가입된 이메일입니다.'
+    } else if (error.message.includes('Password should be at least')) {
+      errorMessage = '비밀번호는 최소 6자 이상이어야 합니다.'
+    } else if (error.message.includes('duplicate key')) {
+      errorMessage = '이미 가입된 이메일입니다.'
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+
     return {
       user: null,
       session: null,
       isAdmin: false,
       needsApproval: true,
-      error: error.message
+      error: errorMessage
     }
   }
 }
@@ -101,11 +115,25 @@ export const signIn = async (email, password, rememberMe = false) => {
     }
   } catch (error) {
     console.error('SignIn error:', error)
+
+    // 사용자 친화적인 에러 메시지로 변환
+    let errorMessage = '로그인 중 오류가 발생했습니다.'
+
+    if (error.message.includes('Invalid login credentials')) {
+      errorMessage = '이메일 또는 비밀번호가 올바르지 않습니다.'
+    } else if (error.message.includes('Email not confirmed')) {
+      errorMessage = '이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요.'
+    } else if (error.message.includes('관리자 승인')) {
+      errorMessage = error.message // 이미 한글 메시지
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+
     return {
       user: null,
       session: null,
       isApproved: false,
-      error: error.message
+      error: errorMessage
     }
   }
 }

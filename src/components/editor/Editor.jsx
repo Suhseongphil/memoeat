@@ -14,7 +14,7 @@ import { TextStyle } from '@tiptap/extension-text-style'
 import { Link } from '@tiptap/extension-link'
 import { Underline } from '@tiptap/extension-underline'
 import { debounce } from 'lodash'
-import { toggleFavorite } from '../../services/notes'
+import { setMainNote } from '../../services/notes'
 import LinkModal from './LinkModal'
 import { FontSize } from './extensions/FontSize'
 import './tiptap.css'
@@ -155,17 +155,17 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
     }
   }
 
-  // 즐겨찾기 토글
-  const handleToggleFavorite = async () => {
+  // 메인 메모 설정/해제
+  const handleSetMainNote = async () => {
     if (!note) return
 
     const newFavoriteState = !isFavorite
     setIsFavorite(newFavoriteState)
 
-    const { note: updatedNote, error } = await toggleFavorite(note.id)
+    const { note: updatedNote, error } = await setMainNote(note.id, note.user_id)
     if (error) {
       setIsFavorite(!newFavoriteState)
-      console.error('즐겨찾기 토글 실패:', error)
+      console.error('메인 메모 설정 실패:', error)
     } else if (updatedNote) {
       await onSave(note.id, { is_favorite: updatedNote.data.is_favorite })
     }
@@ -668,30 +668,36 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
       {/* 제목 입력 */}
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-3">
-          {/* 즐겨찾기 버튼 */}
-          <button
-            onClick={handleToggleFavorite}
-            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
-            aria-label="즐겨찾기 토글"
-          >
-            <svg
-              className={`w-6 h-6 transition-colors ${
-                isFavorite
-                  ? 'text-yellow-500 fill-current'
-                  : 'text-gray-400 dark:text-gray-600'
-              }`}
-              fill={isFavorite ? 'currentColor' : 'none'}
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          {/* 메인 메모 설정 버튼 */}
+          <div className="relative group">
+            <button
+              onClick={handleSetMainNote}
+              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
+              aria-label="메인 메모로 지정"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-              />
-            </svg>
-          </button>
+              <svg
+                className={`w-6 h-6 transition-colors ${
+                  isFavorite
+                    ? 'text-yellow-500 fill-current'
+                    : 'text-gray-400 dark:text-gray-600'
+                }`}
+                fill={isFavorite ? 'currentColor' : 'none'}
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                />
+              </svg>
+            </button>
+            {/* 툴팁 */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+              {isFavorite ? '메인 메모 해제' : '메인으로 지정'}
+            </div>
+          </div>
 
           {/* 제목 입력 */}
           <input

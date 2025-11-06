@@ -319,19 +319,21 @@ function SidebarContent({
           </button>
         </div>
 
-        {/* 폴더 트리 + 메모 리스트 */}
-        <div
-          className="flex-1 overflow-y-auto relative"
-          onContextMenu={handleSidebarContextMenu}
-        >
-          {/* 루트 폴더 (사용자 이름) - 메인 폴더 드롭존 */}
+        {/* 루트 폴더 (사용자 이름) - 상단 고정 */}
+        <div className="flex-shrink-0">
           <RootDropZone
             userName={userName}
             onDrop={handleRootDrop}
             notes={notes}
             onNewFolder={onNewFolder}
           />
+        </div>
 
+        {/* 폴더 트리 + 메모 리스트 - 스크롤 영역 */}
+        <div
+          className="flex-1 overflow-y-auto relative custom-scrollbar"
+          onContextMenu={handleSidebarContextMenu}
+        >
           {/* 폴더 트리 */}
           {folders && folders.length > 0 && (
             <div className="px-2">
@@ -358,7 +360,7 @@ function SidebarContent({
 
           {/* 루트 레벨 메모들 */}
           {rootNotes.length > 0 && (
-            <div className="px-2">
+            <div className="px-2 pb-4">
               {rootNotes.map((note) => (
                 <NoteItemSimple
                   key={note.id}

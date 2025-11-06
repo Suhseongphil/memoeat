@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Header from '../components/common/Header'
@@ -19,6 +19,9 @@ function MainPage() {
   const [activeTabId, setActiveTabId] = useState(null) // 현재 활성 탭 ID
   const [selectedFolderId, setSelectedFolderId] = useState(null) // 선택된 폴더 ID
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // 메인 메모 자동 열기 실행 여부 추적
+  const hasAutoOpenedMainNote = useRef(false)
 
   // 사용자 이름 추출 (이메일의 @ 앞부분)
   const userName = user?.email ? user.email.split('@')[0] : 'User'
@@ -76,6 +79,28 @@ function MainPage() {
     enabled: !!user?.id,
     staleTime: 0
   })
+
+  // 메인 메모 자동 열기 (최초 로드 시)
+  useEffect(() => {
+    // 이미 자동 열기를 실행했거나, 로딩 중이거나, 열린 탭이 있으면 스킵
+    if (hasAutoOpenedMainNote.current || notesLoading || openedNotes.length > 0) {
+      return
+    }
+
+    // 메모가 로드되었고, 메인 메모가 있으면 자동으로 열기
+    if (notes.length > 0) {
+      const mainNote = notes.find(note => note.data.is_favorite === true)
+      if (mainNote) {
+        console.log('메인 메모 자동 열기:', mainNote.data.title)
+        setOpenedNotes([mainNote.id])
+        setActiveTabId(mainNote.id)
+        hasAutoOpenedMainNote.current = true
+      } else {
+        // 메인 메모가 없어도 시도는 했으므로 플래그 설정
+        hasAutoOpenedMainNote.current = true
+      }
+    }
+  }, [notes, notesLoading, openedNotes])
 
   // 열린 탭들의 실제 메모 객체 가져오기
   const openedNotesData = openedNotes
