@@ -22,6 +22,9 @@ function DarkModeToggle() {
     } else {
       document.documentElement.classList.remove('dark')
     }
+
+    // 다른 컴포넌트에 변경사항 알림
+    window.dispatchEvent(new Event('darkModeChange'))
   }
 
   return (

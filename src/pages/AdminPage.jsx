@@ -3,8 +3,8 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAdmin } from '../hooks/useAdmin'
 import { getPendingApprovals, getApprovedUsers, approveUser, rejectUser, signOut } from '../services/auth'
 import DarkModeToggle from '../components/common/DarkModeToggle'
-import logoLight from '../assets/images/memoeat_logo_notepad.svg'
-import logoDark from '../assets/images/memoeat_logo_notepad_dark_v2.svg'
+import logoLight from '../assets/images/memoeat_logo_dark.svg'
+import logoDark from '../assets/images/memoeat_logo_light_border.svg'
 
 function AdminPage() {
   const navigate = useNavigate()
@@ -85,8 +85,8 @@ function AdminPage() {
 
   if (adminLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
-        <div className="text-gray-700 dark:text-gray-300">로딩 중...</div>
+      <div className="min-h-screen bg-white dark:bg-[#1e1e1e] flex items-center justify-center">
+        <div className="text-gray-700 dark:text-[#cccccc]">로딩 중...</div>
       </div>
     )
   }
@@ -96,11 +96,11 @@ function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-white dark:bg-[#1e1e1e]">
       <DarkModeToggle />
 
       {/* 헤더 */}
-      <header className="bg-white dark:bg-gray-800 shadow-md">
+      <header className="bg-white dark:bg-[#252526] shadow-md border-b border-gray-200 dark:border-[#3e3e42]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <Link to="/dashboard" className="flex items-center space-x-3">
             <img src={logoLight} alt="MemoEat Logo" className="h-10 dark:hidden" />
@@ -108,10 +108,10 @@ function AdminPage() {
           </Link>
 
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600 dark:text-gray-400">관리자 페이지</span>
+            <span className="text-sm text-gray-600 dark:text-[#9d9d9d]">관리자 페이지</span>
             <button
               onClick={handleSignOut}
-              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white rounded-lg transition-colors"
             >
               로그아웃
             </button>
@@ -121,7 +121,7 @@ function AdminPage() {
 
       {/* 메인 컨텐츠 */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">사용자 승인 관리</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-[#cccccc] mb-6">사용자 승인 관리</h1>
 
         {error && (
           <div className="mb-4 p-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg">
@@ -130,13 +130,13 @@ function AdminPage() {
         )}
 
         {/* 탭 */}
-        <div className="mb-6 flex space-x-2 border-b border-gray-300 dark:border-gray-600">
+        <div className="mb-6 flex space-x-2 border-b border-gray-300 dark:border-[#3e3e42]">
           <button
             onClick={() => setActiveTab('pending')}
             className={`px-6 py-3 font-medium transition-colors ${
               activeTab === 'pending'
-                ? 'text-orange-600 dark:text-indigo-400 border-b-2 border-orange-600 dark:border-indigo-400'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                ? 'text-blue-600 dark:text-[#569cd6] border-b-2 border-blue-600 dark:border-[#569cd6]'
+                : 'text-gray-600 dark:text-[#9d9d9d] hover:text-gray-800 dark:hover:text-[#cccccc]'
             }`}
           >
             승인 대기 ({pendingUsers.length})
@@ -145,8 +145,8 @@ function AdminPage() {
             onClick={() => setActiveTab('approved')}
             className={`px-6 py-3 font-medium transition-colors ${
               activeTab === 'approved'
-                ? 'text-orange-600 dark:text-indigo-400 border-b-2 border-orange-600 dark:border-indigo-400'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                ? 'text-blue-600 dark:text-[#569cd6] border-b-2 border-blue-600 dark:border-[#569cd6]'
+                : 'text-gray-600 dark:text-[#9d9d9d] hover:text-gray-800 dark:hover:text-[#cccccc]'
             }`}
           >
             승인 완료 ({approvedUsers.length})
@@ -155,53 +155,53 @@ function AdminPage() {
 
         {/* 로딩 상태 */}
         {loading && (
-          <div className="text-center py-12 text-gray-600 dark:text-gray-400">
+          <div className="text-center py-12 text-gray-600 dark:text-[#9d9d9d]">
             사용자 목록을 불러오는 중...
           </div>
         )}
 
         {/* 승인 대기 탭 */}
         {!loading && activeTab === 'pending' && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-white dark:bg-[#252526] rounded-xl shadow-lg border border-gray-200 dark:border-[#3e3e42] overflow-hidden">
             {pendingUsers.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+              <div className="text-center py-12 text-gray-500 dark:text-[#9d9d9d]">
                 승인 대기 중인 사용자가 없습니다.
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-[#3e3e42]">
+                  <thead className="bg-gray-50 dark:bg-[#2d2d30]">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-[#9d9d9d] uppercase tracking-wider">
                         이메일
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-[#9d9d9d] uppercase tracking-wider">
                         요청 시간
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-[#9d9d9d] uppercase tracking-wider">
                         작업
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  <tbody className="bg-white dark:bg-[#252526] divide-y divide-gray-200 dark:divide-[#3e3e42]">
                     {pendingUsers.map((user) => (
                       <tr key={user.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-[#cccccc]">
                           {user.email}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-[#9d9d9d]">
                           {new Date(user.requested_at).toLocaleString('ko-KR')}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm space-x-2">
                           <button
                             onClick={() => handleApprove(user.user_id)}
-                            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
+                            className="px-4 py-2 bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white rounded-lg transition-colors"
                           >
                             승인
                           </button>
                           <button
                             onClick={() => handleReject(user.user_id)}
-                            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                            className="px-4 py-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white rounded-lg transition-colors"
                           >
                             거절
                           </button>
@@ -217,37 +217,37 @@ function AdminPage() {
 
         {/* 승인 완료 탭 */}
         {!loading && activeTab === 'approved' && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-white dark:bg-[#252526] rounded-xl shadow-lg border border-gray-200 dark:border-[#3e3e42] overflow-hidden">
             {approvedUsers.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+              <div className="text-center py-12 text-gray-500 dark:text-[#9d9d9d]">
                 승인된 사용자가 없습니다.
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-[#3e3e42]">
+                  <thead className="bg-gray-50 dark:bg-[#2d2d30]">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-[#9d9d9d] uppercase tracking-wider">
                         이메일
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-[#9d9d9d] uppercase tracking-wider">
                         승인 시간
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-[#9d9d9d] uppercase tracking-wider">
                         요청 시간
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  <tbody className="bg-white dark:bg-[#252526] divide-y divide-gray-200 dark:divide-[#3e3e42]">
                     {approvedUsers.map((user) => (
                       <tr key={user.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-[#cccccc]">
                           {user.email}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-[#9d9d9d]">
                           {user.approved_at ? new Date(user.approved_at).toLocaleString('ko-KR') : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-[#9d9d9d]">
                           {new Date(user.requested_at).toLocaleString('ko-KR')}
                         </td>
                       </tr>

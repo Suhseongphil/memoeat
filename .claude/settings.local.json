@@ -6,7 +6,14 @@
       "Bash(git commit:*)",
       "Bash(git add:*)",
       "Bash(netstat:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(npm run dev:*)",
+      "Bash(taskkill:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(git checkout:*)",
+      "Bash(for file in sidebar/FolderTree.jsx sidebar/NoteList.jsx sidebar/SearchPanel.jsx common/Header.jsx sidebar/panels/AllNotesPanel.jsx)",
+      "Bash(do sed -i 's/orange-/amber-/g' \"$file\")",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

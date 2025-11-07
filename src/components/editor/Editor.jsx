@@ -604,10 +604,10 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
 
   if (!note) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-[#1e1e1e]">
         <div className="text-center">
           <svg
-            className="w-24 h-24 text-gray-300 dark:text-gray-700 mx-auto mb-4"
+            className="w-24 h-24 text-gray-300 dark:text-[#9d9d9d] mx-auto mb-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -619,8 +619,8 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
               d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
             />
           </svg>
-          <p className="text-lg text-gray-500 dark:text-gray-400">메모를 선택하거나</p>
-          <p className="text-lg text-gray-500 dark:text-gray-400">새 메모를 작성하세요</p>
+          <p className="text-lg text-gray-500 dark:text-[#cccccc]">메모를 선택하거나</p>
+          <p className="text-lg text-gray-500 dark:text-[#cccccc]">새 메모를 작성하세요</p>
         </div>
       </div>
     )
@@ -631,9 +631,9 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
+    <div className="flex-1 flex flex-col bg-white dark:bg-[#1e1e1e] overflow-hidden">
       {/* 에디터 도구 모음 - 네이버 카페 스타일 */}
-      <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+      <div className="px-6 py-3 border-b border-gray-200 dark:border-[#3e3e42] bg-gray-50 dark:bg-[#252526]">
         <div className="flex items-center gap-2 flex-wrap">
           {/* 글꼴 */}
           <div className="relative group dropdown-container">
@@ -645,10 +645,10 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowSpecialCharPicker(false)
                 setShowAlignmentPicker(false)
               }}
-              className="p-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
+              className="p-2 border border-gray-300 dark:border-[#3e3e42] rounded hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors bg-white dark:bg-[#252526]"
               title="글꼴"
             >
-              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-gray-700 dark:text-[#cccccc]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10M12 3v18M5.5 7h13" />
               </svg>
             </button>
@@ -657,7 +657,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
               글꼴
             </div>
             {showFontFamilyPicker && (
-              <div className="absolute top-full mt-1 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[140px]">
+              <div className="absolute top-full mt-1 p-2 bg-white dark:bg-[#252526] border border-gray-200 dark:border-[#3e3e42] rounded-lg shadow-lg z-10 min-w-[140px]">
                 <div className="flex flex-col gap-1">
                   {fontFamilies.map((font) => (
                     <button
@@ -666,7 +666,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                         editor.chain().focus().setFontFamily(font.value).run()
                         setShowFontFamilyPicker(false)
                       }}
-                      className="px-3 py-2 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm text-gray-900 dark:text-gray-100"
+                      className="px-3 py-2 text-left rounded hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors text-sm text-gray-900 dark:text-[#cccccc]"
                       style={{ fontFamily: font.value }}
                     >
                       {font.name}
@@ -687,10 +687,10 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowSpecialCharPicker(false)
                 setShowAlignmentPicker(false)
               }}
-              className="p-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
+              className="p-2 border border-gray-300 dark:border-[#3e3e42] rounded hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors bg-white dark:bg-[#252526]"
               title="글자 크기"
             >
-              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-gray-700 dark:text-[#cccccc]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <text x="2" y="18" fontSize="18" fontWeight="bold" fill="currentColor">A</text>
                 <text x="12" y="20" fontSize="12" fill="currentColor">A</text>
               </svg>
@@ -700,7 +700,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
               글자 크기
             </div>
             {showFontSizePicker && (
-              <div className="absolute top-full mt-1 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[100px]">
+              <div className="absolute top-full mt-1 p-2 bg-white dark:bg-[#252526] border border-gray-200 dark:border-[#3e3e42] rounded-lg shadow-lg z-10 min-w-[100px]">
                 <div className="flex flex-col gap-1">
                   {fontSizes.map((size) => (
                     <button
@@ -709,7 +709,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                         editor.chain().focus().setFontSize(size.value).run()
                         setShowFontSizePicker(false)
                       }}
-                      className="px-3 py-1.5 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm text-gray-900 dark:text-gray-100"
+                      className="px-3 py-1.5 text-left rounded hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors text-sm text-gray-900 dark:text-[#cccccc]"
                       style={{ fontSize: size.value }}
                     >
                       {size.name}
@@ -720,18 +720,18 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
             )}
           </div>
 
-          <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
+          <div className="w-px h-6 bg-gray-300 dark:bg-[#3e3e42]"></div>
 
           {/* 굵게 */}
           <div className="relative group">
             <button
               onClick={() => editor.chain().focus().toggleBold().run()}
-              className={`p-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                editor.isActive('bold') ? 'bg-gray-200 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'
+              className={`p-2 border border-gray-300 dark:border-[#3e3e42] rounded hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors ${
+                editor.isActive('bold') ? 'bg-gray-200 dark:bg-[#2d2d30]' : 'bg-white dark:bg-[#252526]'
               }`}
               title="굵게"
             >
-              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-gray-700 dark:text-[#cccccc]" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h7.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-3v-3zm3.5 9H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/>
               </svg>
             </button>
@@ -741,7 +741,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
             </div>
           </div>
 
-          <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
+          <div className="w-px h-6 bg-gray-300 dark:bg-[#3e3e42]"></div>
 
           {/* 글자 색상 */}
           <div className="relative group dropdown-container">
@@ -753,10 +753,10 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowSpecialCharPicker(false)
                 setShowAlignmentPicker(false)
               }}
-              className="p-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
+              className="p-2 border border-gray-300 dark:border-[#3e3e42] rounded hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors bg-white dark:bg-[#252526]"
               title="글자 색상"
             >
-              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-gray-700 dark:text-[#cccccc]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
               </svg>
             </button>
@@ -765,7 +765,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
               글자 색상
             </div>
             {showTextColorPicker && (
-              <div className="absolute top-full mt-1 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 w-[420px] max-h-[400px] overflow-y-auto">
+              <div className="absolute top-full mt-1 p-4 bg-white dark:bg-[#252526] border border-gray-200 dark:border-[#3e3e42] rounded-lg shadow-lg z-10 w-[420px] max-h-[400px] overflow-y-auto">
                 <div className="grid grid-cols-10 gap-3">
                   {textColors.map((color) => (
                     <button
@@ -774,7 +774,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                         editor.chain().focus().setColor(color.value).run()
                         setShowTextColorPicker(false)
                       }}
-                      className="w-9 h-9 rounded border-2 border-gray-300 dark:border-gray-600 hover:scale-110 transition-transform"
+                      className="w-9 h-9 rounded border-2 border-gray-300 dark:border-[#3e3e42] hover:scale-110 transition-transform"
                       style={{ backgroundColor: color.value }}
                       title={color.name}
                     />
@@ -784,7 +784,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
             )}
           </div>
 
-          <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
+          <div className="w-px h-6 bg-gray-300 dark:bg-[#3e3e42]"></div>
 
           {/* 정렬 */}
           <div className="relative group dropdown-container">
@@ -796,10 +796,10 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowFontFamilyPicker(false)
                 setShowSpecialCharPicker(false)
               }}
-              className="p-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
+              className="p-2 border border-gray-300 dark:border-[#3e3e42] rounded hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors bg-white dark:bg-[#252526]"
               title="정렬"
             >
-              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-gray-700 dark:text-[#cccccc]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
               </svg>
             </button>
@@ -808,7 +808,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
               텍스트 정렬
             </div>
             {showAlignmentPicker && (
-              <div className="absolute top-full mt-1 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[120px]">
+              <div className="absolute top-full mt-1 p-2 bg-white dark:bg-[#252526] border border-gray-200 dark:border-[#3e3e42] rounded-lg shadow-lg z-10 min-w-[120px]">
                 <div className="flex flex-col gap-1">
                   {alignments.map((align) => (
                     <button
@@ -817,8 +817,8 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                         editor.chain().focus().setTextAlign(align.value).run()
                         setShowAlignmentPicker(false)
                       }}
-                      className={`px-3 py-2 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm flex items-center gap-2 text-gray-900 dark:text-gray-100 ${
-                        editor.isActive({ textAlign: align.value }) ? 'bg-gray-100 dark:bg-gray-700' : ''
+                      className={`px-3 py-2 text-left rounded hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors text-sm flex items-center gap-2 text-gray-900 dark:text-[#cccccc] ${
+                        editor.isActive({ textAlign: align.value }) ? 'bg-gray-100 dark:bg-[#2d2d30]' : ''
                       }`}
                     >
                       <span>{align.icon}</span>
@@ -830,7 +830,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
             )}
           </div>
 
-          <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
+          <div className="w-px h-6 bg-gray-300 dark:bg-[#3e3e42]"></div>
 
           {/* 특수문자 */}
           <div className="relative group dropdown-container">
@@ -842,10 +842,10 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowFontFamilyPicker(false)
                 setShowAlignmentPicker(false)
               }}
-              className="p-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
+              className="p-2 border border-gray-300 dark:border-[#3e3e42] rounded hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors bg-white dark:bg-[#252526]"
               title="특수문자"
             >
-              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-gray-700 dark:text-[#cccccc]" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M11 15h2v2h-2v-2zm0-8h2v6h-2V7zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
               </svg>
             </button>
@@ -854,13 +854,13 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
               특수문자 삽입
             </div>
             {showSpecialCharPicker && (
-              <div className="absolute top-full mt-1 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 w-[360px] max-h-[400px] overflow-y-auto">
+              <div className="absolute top-full mt-1 p-3 bg-white dark:bg-[#252526] border border-gray-200 dark:border-[#3e3e42] rounded-lg shadow-lg z-10 w-[360px] max-h-[400px] overflow-y-auto">
                 <div className="grid grid-cols-10 gap-1">
                   {specialChars.map((char, index) => (
                     <button
                       key={`${char}-${index}`}
                       onClick={() => insertSpecialChar(char)}
-                      className="w-8 h-8 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-base text-gray-900 dark:text-gray-100"
+                      className="w-8 h-8 rounded border border-gray-300 dark:border-[#3e3e42] hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors text-base text-gray-900 dark:text-[#cccccc]"
                       title={char}
                     >
                       {char}
@@ -875,10 +875,10 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
           <div className="relative group">
             <button
               disabled
-              className="p-2 border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-800 opacity-50 cursor-not-allowed"
+              className="p-2 border border-gray-300 dark:border-[#3e3e42] rounded bg-gray-100 dark:bg-[#252526] opacity-50 cursor-not-allowed"
               title="링크 (비활성화)"
             >
-              <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-gray-700 dark:text-[#cccccc]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
             </button>
@@ -893,14 +893,14 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
         {note.data.link_type && (
           <div className="flex items-center space-x-2 mt-2">
             {note.data.link_type === 'youtube' ? (
-              <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full">
+              <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-[#cccccc] rounded-full">
                 <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" />
                 </svg>
                 YouTube
               </span>
             ) : (
-              <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full">
+              <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-[#cccccc] rounded-full">
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                 </svg>
@@ -912,7 +912,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 href={note.data.link_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                className="p-2 text-blue-600 dark:text-[#569cd6] hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                 aria-label="원본 링크"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -925,20 +925,20 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
       </div>
 
       {/* 제목 입력 */}
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-[#3e3e42]">
         <div className="flex items-center space-x-3">
           {/* 즐겨찾기 버튼 */}
           <div className="relative group">
             <button
               onClick={handleToggleFavorite}
-              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
+              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors flex-shrink-0"
               aria-label="즐겨찾기"
             >
               <svg
                 className={`w-6 h-6 transition-colors ${
                   isFavorite
                     ? 'text-yellow-500 fill-current'
-                    : 'text-gray-400 dark:text-gray-600'
+                    : 'text-gray-400 dark:text-[#9d9d9d]'
                 }`}
                 fill={isFavorite ? 'currentColor' : 'none'}
                 stroke="currentColor"
@@ -964,14 +964,14 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
             value={title}
             onChange={handleTitleChange}
             placeholder="제목을 입력하세요"
-            className="flex-1 text-2xl font-bold bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600"
+            className="flex-1 text-2xl font-bold bg-transparent border-none outline-none text-gray-900 dark:text-[#cccccc] placeholder-gray-400 dark:placeholder-[#9d9d9d]"
           />
 
           {/* 클립보드 복사 버튼 */}
           <div className="relative group">
             <button
               onClick={handleCopyToClipboard}
-              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
+              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors flex-shrink-0"
               aria-label="클립보드에 복사"
             >
               {isCopied ? (
@@ -992,7 +992,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
               ) : (
                 // 기본 복사 아이콘
                 <svg
-                  className="w-6 h-6 text-gray-400 dark:text-gray-600 hover:text-green-500 dark:hover:text-green-400 transition-colors"
+                  className="w-6 h-6 text-gray-400 dark:text-[#9d9d9d] hover:text-green-500 dark:hover:text-green-400 transition-colors"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1016,11 +1016,11 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
           <div className="relative group">
             <button
               onClick={handleDownloadTxt}
-              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
+              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors flex-shrink-0"
               aria-label="TXT 다운로드"
             >
               <svg
-                className="w-6 h-6 text-gray-400 dark:text-gray-600 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                className="w-6 h-6 text-gray-400 dark:text-[#9d9d9d] hover:text-blue-500 dark:hover:text-[#569cd6] transition-colors"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -1046,7 +1046,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
             aria-label="메모 삭제"
           >
             <svg
-              className="w-6 h-6 text-gray-400 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+              className="w-6 h-6 text-gray-400 dark:text-[#9d9d9d] hover:text-red-500 dark:hover:text-red-400 transition-colors"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

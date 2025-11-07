@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { signOut } from '../../services/auth'
 import { useAuthStore } from '../../stores/authStore'
-import logoLight from '../../assets/images/memoeat_logo_notepad.svg'
-import logoDark from '../../assets/images/memoeat_logo_notepad_dark_v2.svg'
+import logoLight from '../../assets/images/memoeat_logo_light_border.svg'
+import logoDark from '../../assets/images/memoeat_logo_dark.svg'
 
 function Header({ onMenuToggle, showMenuButton = true }) {
   const navigate = useNavigate()
@@ -57,7 +57,7 @@ function Header({ onMenuToggle, showMenuButton = true }) {
   }
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700">
+    <header className="bg-white dark:bg-[#252526] shadow-md border-b border-gray-200 dark:border-[#3e3e42]">
       <div className="max-w-full mx-auto px-4 py-3 flex items-center justify-between">
         {/* 왼쪽: 모바일 메뉴 버튼 + 로고 */}
         <div className="flex items-center space-x-4">
@@ -97,7 +97,7 @@ function Header({ onMenuToggle, showMenuButton = true }) {
           {isAdmin && (
             <Link
               to="/admin"
-              className="hidden sm:flex items-center px-3 py-2 text-sm font-medium text-orange-600 dark:text-indigo-400 hover:bg-orange-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="hidden sm:flex items-center px-3 py-2 text-sm font-medium text-amber-600 dark:text-indigo-400 hover:bg-amber-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               <svg
                 className="w-4 h-4 mr-1"
@@ -158,11 +158,11 @@ function Header({ onMenuToggle, showMenuButton = true }) {
 
             {/* 설정 드롭다운 */}
             {settingsOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-[100]">
+              <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-[#2d2d30] rounded-lg shadow-lg border border-gray-200 dark:border-[#3e3e42] py-2 z-[100]">
                 {/* 다크모드 토글 */}
                 <button
                   onClick={handleThemeToggle}
-                  className="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-[#cccccc] hover:bg-gray-100 dark:hover:bg-[#3e3e42] transition-colors"
                 >
                   <span className="flex items-center">
                     {preferences?.theme === 'dark' ? (
@@ -181,7 +181,7 @@ function Header({ onMenuToggle, showMenuButton = true }) {
                     {preferences?.theme === 'dark' ? '다크모드' : '라이트모드'}
                   </span>
                   <div className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
-                    preferences?.theme === 'dark' ? 'bg-indigo-500' : 'bg-gray-300'
+                    preferences?.theme === 'dark' ? 'bg-[#569cd6]' : 'bg-amber-500'
                   }`}>
                     <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
                       preferences?.theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
@@ -192,7 +192,7 @@ function Header({ onMenuToggle, showMenuButton = true }) {
                 {/* 사이드바 위치 토글 */}
                 <button
                   onClick={handleSidebarPositionToggle}
-                  className="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-[#cccccc] hover:bg-gray-100 dark:hover:bg-[#3e3e42] transition-colors"
                 >
                   <span className="flex items-center">
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -201,7 +201,7 @@ function Header({ onMenuToggle, showMenuButton = true }) {
                     사이드바 {preferences?.sidebarPosition === 'right' ? '오른쪽' : '왼쪽'}
                   </span>
                   <div className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
-                    preferences?.sidebarPosition === 'right' ? 'bg-indigo-500' : 'bg-gray-300'
+                    preferences?.sidebarPosition === 'right' ? 'bg-amber-500 dark:bg-[#569cd6]' : 'bg-gray-300 dark:bg-gray-600'
                   }`}>
                     <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
                       preferences?.sidebarPosition === 'right' ? 'translate-x-5' : 'translate-x-0'
@@ -209,10 +209,10 @@ function Header({ onMenuToggle, showMenuButton = true }) {
                   </div>
                 </button>
 
-                <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+                <div className="border-t border-gray-200 dark:border-[#3e3e42] my-2"></div>
 
                 {/* 설정 안내 */}
-                <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400">
+                <div className="px-4 py-2 text-xs text-gray-500 dark:text-[#9d9d9d]">
                   설정은 자동으로 저장되며 모든 기기에서 동기화됩니다.
                 </div>
               </div>

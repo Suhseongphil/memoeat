@@ -1,17 +1,28 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import logoLight from './assets/images/memoeat_logo_notepad.svg'
-import logoDark from './assets/images/memoeat_logo_notepad_dark_v2.svg'
+import logoLight from './assets/images/memoeat_logo_light_border.svg'
+import logoDark from './assets/images/memoeat_logo_dark.svg'
 
 function App() {
   const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
-    // 다크모드 초기 상태 설정
+    // 다크모드 초기 상태 설정 및 변경 감지
     const dark = localStorage.getItem('darkMode') === 'true'
     setIsDark(dark)
     if (dark) {
       document.documentElement.classList.add('dark')
+    }
+
+    // 다크모드 변경 이벤트 리스너
+    const handleDarkModeChange = () => {
+      const newDark = localStorage.getItem('darkMode') === 'true'
+      setIsDark(newDark)
+    }
+
+    window.addEventListener('darkModeChange', handleDarkModeChange)
+    return () => {
+      window.removeEventListener('darkModeChange', handleDarkModeChange)
     }
   }, [])
 
@@ -25,6 +36,9 @@ function App() {
     } else {
       document.documentElement.classList.remove('dark')
     }
+
+    // 다른 컴포넌트에 변경사항 알림
+    window.dispatchEvent(new Event('darkModeChange'))
   }
 
   const handleLoginClick = () => {
@@ -36,12 +50,20 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+    <div className={`min-h-screen flex items-center justify-center p-4 ${
+      isDark
+        ? 'bg-[#1e1e1e]'
+        : 'bg-white'
+    }`}>
       <div className="text-center max-w-2xl">
         {/* 다크모드 토글 버튼 */}
         <button
           onClick={toggleDarkMode}
-          className="fixed top-4 right-4 p-3 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-full shadow-lg hover:shadow-xl transition-all z-50"
+          className={`fixed top-4 right-4 p-3 rounded-full shadow-lg hover:shadow-xl transition-all z-50 ${
+            isDark
+              ? 'bg-[#252526] text-[#cccccc]'
+              : 'bg-gray-100 text-gray-800'
+          }`}
           aria-label={isDark ? '라이트 모드로 전환' : '다크 모드로 전환'}
         >
           {isDark ? (
@@ -61,21 +83,25 @@ function App() {
             <img
               src={logoLight}
               alt="MemoEat Logo"
-              className="w-full h-auto dark:hidden cursor-pointer"
+              className={`w-full h-auto cursor-pointer ${isDark ? 'hidden' : 'block'}`}
             />
             <img
               src={logoDark}
               alt="MemoEat Logo"
-              className="w-full h-auto hidden dark:block cursor-pointer"
+              className={`w-full h-auto cursor-pointer ${isDark ? 'block' : 'hidden'}`}
             />
           </Link>
         </div>
 
         {/* 설명 */}
-        <p className="text-xl md:text-2xl text-gray-700 dark:text-gray-300 mb-4">
+        <p className={`text-xl md:text-2xl mb-4 ${
+          isDark ? 'text-[#cccccc]' : 'text-gray-900'
+        }`}>
           정보를 먹다, 지식을 소화하다
         </p>
-        <p className="text-base md:text-lg text-gray-600 dark:text-gray-400 mb-12 px-4">
+        <p className={`text-base md:text-lg mb-12 px-4 ${
+          isDark ? 'text-[#9d9d9d]' : 'text-gray-600'
+        }`}>
           빠르고 간편한 메모 작성, 그리고 AI 링크 요약까지
         </p>
 
@@ -83,13 +109,21 @@ function App() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <button
             onClick={handleLoginClick}
-            className="w-full sm:w-auto px-8 py-3 bg-orange-500 hover:bg-orange-600 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all"
+            className={`w-full sm:w-auto px-8 py-3 font-medium rounded-lg shadow-lg hover:shadow-xl transition-all ${
+              isDark
+                ? 'bg-white hover:bg-gray-100 text-gray-900'
+                : 'bg-gray-900 hover:bg-gray-800 text-white'
+            }`}
           >
             로그인
           </button>
           <button
             onClick={handleSignUpClick}
-            className="w-full sm:w-auto px-8 py-3 bg-white hover:bg-orange-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-orange-600 dark:text-indigo-400 font-medium rounded-lg shadow-lg hover:shadow-xl transition-all border-2 border-orange-500 dark:border-indigo-500"
+            className={`w-full sm:w-auto px-8 py-3 font-medium rounded-lg shadow-lg hover:shadow-xl transition-all border-2 ${
+              isDark
+                ? 'bg-[#252526] hover:bg-[#2d2d30] text-white border-white'
+                : 'bg-white hover:bg-gray-50 text-gray-900 border-gray-900'
+            }`}
           >
             회원가입
           </button>
@@ -97,24 +131,42 @@ function App() {
 
         {/* 기능 소개 */}
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-          <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md">
+          <div className={`p-6 rounded-xl shadow-md ${
+            isDark ? 'bg-[#252526] border border-[#3e3e42]' : 'bg-white border border-gray-200'
+          }`}>
             <div className="text-3xl mb-3">🔗</div>
-            <h3 className="font-bold text-gray-800 dark:text-white mb-2">AI 링크 요약</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <h3 className={`font-bold mb-2 ${
+              isDark ? 'text-[#cccccc]' : 'text-gray-900'
+            }`}>AI 링크 요약</h3>
+            <p className={`text-sm ${
+              isDark ? 'text-[#9d9d9d]' : 'text-gray-600'
+            }`}>
               웹페이지와 유튜브 영상을 AI가 자동으로 요약
             </p>
           </div>
-          <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md">
+          <div className={`p-6 rounded-xl shadow-md ${
+            isDark ? 'bg-[#252526] border border-[#3e3e42]' : 'bg-white border border-gray-200'
+          }`}>
             <div className="text-3xl mb-3">📁</div>
-            <h3 className="font-bold text-gray-800 dark:text-white mb-2">폴더 관리</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <h3 className={`font-bold mb-2 ${
+              isDark ? 'text-[#cccccc]' : 'text-gray-900'
+            }`}>폴더 관리</h3>
+            <p className={`text-sm ${
+              isDark ? 'text-[#9d9d9d]' : 'text-gray-600'
+            }`}>
               Windows 탐색기 스타일의 직관적인 폴더 구조
             </p>
           </div>
-          <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md">
+          <div className={`p-6 rounded-xl shadow-md ${
+            isDark ? 'bg-[#252526] border border-[#3e3e42]' : 'bg-white border border-gray-200'
+          }`}>
             <div className="text-3xl mb-3">⚡</div>
-            <h3 className="font-bold text-gray-800 dark:text-white mb-2">자동 저장</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <h3 className={`font-bold mb-2 ${
+              isDark ? 'text-[#cccccc]' : 'text-gray-900'
+            }`}>자동 저장</h3>
+            <p className={`text-sm ${
+              isDark ? 'text-[#9d9d9d]' : 'text-gray-600'
+            }`}>
               별도의 저장 버튼 없이 실시간 자동 저장
             </p>
           </div>

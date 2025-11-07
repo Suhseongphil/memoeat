@@ -86,18 +86,18 @@ function RootDropZone({ userName, onDrop, notes, onNewFolder }) {
         onDrop={handleDrop}
         className={`flex items-center px-5 py-4 text-base font-bold rounded-xl transition-all duration-200 ${
           isActive
-            ? 'ring-4 ring-orange-500 dark:ring-indigo-500 bg-orange-100 dark:bg-indigo-900/40 scale-[1.05] shadow-2xl'
+            ? 'ring-4 ring-amber-500 dark:ring-[#569cd6] bg-amber-100 dark:bg-[#1e1e1e] scale-[1.05] shadow-2xl'
             : canDrop
-            ? 'ring-2 ring-orange-300 dark:ring-indigo-600 bg-orange-50 dark:bg-indigo-900/20'
-            : 'bg-gray-100 dark:bg-gray-700/70 hover:bg-gray-200 dark:hover:bg-gray-700'
-        } text-gray-800 dark:text-gray-200 cursor-pointer`}
+            ? 'ring-2 ring-amber-300 dark:ring-[#569cd6] bg-amber-50 dark:bg-[#1e1e1e]'
+            : 'bg-gray-100 dark:bg-[#2d2d30] hover:bg-gray-200 dark:hover:bg-[#2d2d30]'
+        } text-gray-800 dark:text-[#cccccc] cursor-pointer`}
         style={{
           minHeight: '56px'
         }}
       >
         <svg
           className={`w-6 h-6 mr-3 transition-all duration-200 ${
-            isActive ? 'text-orange-600 dark:text-indigo-400 scale-110' : 'text-gray-600 dark:text-gray-400'
+            isActive ? 'text-amber-600 dark:text-[#569cd6] scale-110' : 'text-gray-600 dark:text-[#9d9d9d]'
           }`}
           fill="currentColor"
           viewBox="0 0 20 20"
@@ -113,11 +113,11 @@ function RootDropZone({ userName, onDrop, notes, onNewFolder }) {
               e.stopPropagation()
               onNewFolder(null)
             }}
-            className="ml-2 p-1.5 rounded-lg hover:bg-orange-200 dark:hover:bg-indigo-700 transition-all"
+            className="ml-2 p-1.5 rounded-lg hover:bg-amber-200 dark:hover:bg-[#569cd6] transition-all"
             title="새 폴더"
           >
             <svg
-              className="w-4 h-4 text-gray-700 dark:text-gray-300"
+              className="w-4 h-4 text-gray-700 dark:text-[#cccccc]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -129,7 +129,7 @@ function RootDropZone({ userName, onDrop, notes, onNewFolder }) {
 
         {isActive && (
           <svg
-            className="w-5 h-5 text-orange-600 dark:text-indigo-400 animate-bounce"
+            className="w-5 h-5 text-amber-600 dark:text-[#569cd6] animate-bounce"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -141,14 +141,14 @@ function RootDropZone({ userName, onDrop, notes, onNewFolder }) {
 
       {/* 드롭존 설명 텍스트 */}
       {isActive && (
-        <div className="mt-3 mx-2 px-3 py-2 bg-orange-50 dark:bg-indigo-900/20 border border-orange-300 dark:border-indigo-600 rounded-lg text-sm text-orange-700 dark:text-indigo-300 font-semibold text-center animate-pulse">
+        <div className="mt-3 mx-2 px-3 py-2 bg-amber-50 dark:bg-[#1e1e1e] border border-amber-300 dark:border-[#569cd6] rounded-lg text-sm text-amber-700 dark:text-[#569cd6] font-semibold text-center animate-pulse">
           ↓ 메인 폴더로 이동 ↓
         </div>
       )}
 
       {/* 드래그 가능할 때 힌트 표시 */}
       {canDrop && !isActive && (
-        <div className="mt-2 px-3 text-xs text-gray-500 dark:text-gray-400 text-center">
+        <div className="mt-2 px-3 text-xs text-gray-500 dark:text-[#9d9d9d] text-center">
           💡 {userName} 폴더로 드래그하면 메인 폴더로 이동
         </div>
       )}
@@ -275,15 +275,15 @@ function SidebarContent({
         `}
       >
         {/* 아이콘 네비게이션 바 */}
-        <div className={`w-12 bg-gray-100 dark:bg-gray-900 flex flex-col items-center py-4 ${sidebarPosition === 'left' ? 'border-r' : 'border-l'} border-gray-200 dark:border-gray-700`}>
+        <div className={`w-12 bg-gray-100 dark:bg-[#1e1e1e] flex flex-col items-center py-4 ${sidebarPosition === 'left' ? 'border-r' : 'border-l'} border-gray-200 dark:border-[#3e3e42]`}>
           {/* 탐색기 아이콘 */}
           <button
             onClick={() => setActivePanel('explorer')}
             className={`
               w-10 h-10 rounded-lg flex items-center justify-center transition-colors mb-2
               ${activePanel === 'explorer'
-                ? 'bg-orange-200 dark:bg-indigo-700 text-orange-700 dark:text-indigo-200'
-                : 'hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+                ? 'bg-amber-200 dark:bg-[#569cd6] text-amber-700 dark:text-[#cccccc]'
+                : 'hover:bg-gray-200 dark:hover:bg-[#252526] text-gray-600 dark:text-[#9d9d9d]'
               }
             `}
             title="탐색기"
@@ -309,8 +309,8 @@ function SidebarContent({
             className={`
               w-10 h-10 rounded-lg flex items-center justify-center transition-colors mb-2
               ${activePanel === 'favorites'
-                ? 'bg-orange-200 dark:bg-indigo-700 text-orange-700 dark:text-indigo-200'
-                : 'hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+                ? 'bg-amber-200 dark:bg-[#569cd6] text-amber-700 dark:text-[#cccccc]'
+                : 'hover:bg-gray-200 dark:hover:bg-[#252526] text-gray-600 dark:text-[#9d9d9d]'
               }
             `}
             title="즐겨찾기"
@@ -336,8 +336,8 @@ function SidebarContent({
             className={`
               w-10 h-10 rounded-lg flex items-center justify-center transition-colors
               ${activePanel === 'search'
-                ? 'bg-orange-200 dark:bg-indigo-700 text-orange-700 dark:text-indigo-200'
-                : 'hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+                ? 'bg-amber-200 dark:bg-[#569cd6] text-amber-700 dark:text-[#cccccc]'
+                : 'hover:bg-gray-200 dark:hover:bg-[#252526] text-gray-600 dark:text-[#9d9d9d]'
               }
             `}
             title="검색"
@@ -359,24 +359,24 @@ function SidebarContent({
         </div>
 
         {/* 패널 영역 */}
-        <div className={`w-80 bg-white dark:bg-gray-800 ${sidebarPosition === 'left' ? 'border-r' : 'border-l'} border-gray-200 dark:border-gray-700 flex flex-col`}>
+        <div className={`w-80 bg-white dark:bg-[#252526] ${sidebarPosition === 'left' ? 'border-r' : 'border-l'} border-gray-200 dark:border-[#3e3e42] flex flex-col`}>
           {activePanel === 'explorer' ? (
             // 탐색기 패널
             <>
               {/* 사이드바 헤더 */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-b border-gray-200 dark:border-[#3e3e42]">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-[#cccccc]">
               탐색기
             </h2>
             {/* 모바일 닫기 버튼 */}
             <button
               onClick={onClose}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors"
               aria-label="사이드바 닫기"
             >
               <svg
-                className="w-5 h-5 text-gray-600 dark:text-gray-400"
+                className="w-5 h-5 text-gray-600 dark:text-[#9d9d9d]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -394,7 +394,7 @@ function SidebarContent({
           {/* 새 메모 버튼 */}
           <button
             onClick={handleNewNote}
-            className="w-full flex items-center justify-center px-4 py-2 bg-orange-500 hover:bg-orange-600 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-medium rounded-lg transition-colors"
+            className="w-full flex items-center justify-center px-4 py-2 bg-amber-500 hover:bg-amber-600 dark:bg-[#569cd6] dark:hover:bg-[#4a8cc5] text-white font-medium rounded-lg transition-colors"
           >
             <svg
               className="w-5 h-5 mr-2"
@@ -516,7 +516,7 @@ function SidebarContent({
           />
           <div
             ref={contextMenuRef}
-            className="fixed z-[10000] w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1"
+            className="fixed z-[10000] w-48 bg-white dark:bg-[#252526] rounded-lg shadow-xl border border-gray-200 dark:border-[#3e3e42] py-1"
             style={{
               top: `${contextMenuPosition.top}px`,
               left: `${contextMenuPosition.left}px`,
@@ -525,10 +525,10 @@ function SidebarContent({
           >
             <button
               onClick={handleCreateFolder}
-              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-100 dark:hover:bg-indigo-900/30 flex items-center transition-colors"
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-[#cccccc] hover:bg-amber-100 dark:hover:bg-[#1e1e1e] flex items-center transition-colors"
             >
               <svg
-                className="w-4 h-4 mr-3 text-gray-600 dark:text-gray-400"
+                className="w-4 h-4 mr-3 text-gray-600 dark:text-[#9d9d9d]"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >

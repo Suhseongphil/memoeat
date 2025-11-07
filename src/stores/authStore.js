@@ -13,7 +13,7 @@ export const useAuthStore = create((set, get) => ({
   loading: true,
   error: null,
   preferences: {
-    theme: 'light',
+    theme: 'default', // 기본 테마: 하얀색 베이스
     sidebarPosition: 'left'
   },
 
@@ -54,12 +54,12 @@ export const useAuthStore = create((set, get) => ({
       }
 
       // 사용자 설정 불러오기 (loading 상태를 false로 변경하기 전에)
-      let userPreferences = { theme: 'light', sidebarPosition: 'left' }
+      let userPreferences = { theme: 'default', sidebarPosition: 'left' }
       if (user) {
         const { preferences } = await getUserPreferences(user.id)
         userPreferences = preferences
 
-        // 다크모드 적용
+        // 테마 적용
         if (preferences.theme === 'dark') {
           document.documentElement.classList.add('dark')
         } else {
@@ -98,7 +98,7 @@ export const useAuthStore = create((set, get) => ({
 
       set({ preferences: updatedPreferences })
 
-      // 다크모드 적용
+      // 테마 적용
       if (updatedPreferences.theme === 'dark') {
         document.documentElement.classList.add('dark')
       } else {

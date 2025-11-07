@@ -25,19 +25,19 @@ function FavoritesPanel({
   return (
     <>
       {/* 헤더 */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-4 border-b border-gray-200 dark:border-[#3e3e42]">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-[#cccccc]">
             즐겨찾기
           </h2>
           {/* 모바일 닫기 버튼 */}
           <button
             onClick={onClose}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors"
             aria-label="사이드바 닫기"
           >
             <svg
-              className="w-5 h-5 text-gray-600 dark:text-gray-400"
+              className="w-5 h-5 text-gray-600 dark:text-[#9d9d9d]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -56,7 +56,7 @@ function FavoritesPanel({
       {/* 즐겨찾기 메모 리스트 */}
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         {favoriteNotes.length === 0 ? (
-          <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
+          <div className="p-4 text-center text-gray-500 dark:text-[#9d9d9d] text-sm">
             즐겨찾기한 메모가 없습니다
           </div>
         ) : (

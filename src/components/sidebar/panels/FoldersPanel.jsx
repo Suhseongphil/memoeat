@@ -21,18 +21,18 @@ function FoldersPanel({
   return (
     <div className="flex flex-col h-full">
       {/* 헤더 */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-4 border-b border-gray-200 dark:border-[#3e3e42]">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-[#cccccc]">
             폴더
           </h2>
           <button
             onClick={() => onNewFolder(null)}
-            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors"
             aria-label="새 폴더"
           >
             <svg
-              className="w-4 h-4 text-gray-600 dark:text-gray-400"
+              className="w-4 h-4 text-gray-600 dark:text-[#9d9d9d]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -49,7 +49,7 @@ function FoldersPanel({
       </div>
 
       {/* 폴더 트리 */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 overflow-y-auto" style={{ maxHeight: '40%' }}>
+      <div className="p-4 border-b border-gray-200 dark:border-[#3e3e42] overflow-y-auto" style={{ maxHeight: '40%' }}>
         {folders && folders.length > 0 ? (
           <FolderTree
             folders={folders}
@@ -60,7 +60,7 @@ function FoldersPanel({
             onCreateFolder={onNewFolder}
           />
         ) : (
-          <div className="text-center py-6 text-gray-500 dark:text-gray-400 text-sm">
+          <div className="text-center py-6 text-gray-500 dark:text-[#9d9d9d] text-sm">
             폴더가 없습니다
             <br />
             <span className="text-xs">위 + 버튼을 눌러 폴더를 만드세요</span>
@@ -79,12 +79,12 @@ function FoldersPanel({
               onDeleteNote={onDeleteNote}
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400 text-sm">
+            <div className="flex items-center justify-center h-full text-gray-500 dark:text-[#9d9d9d] text-sm">
               이 폴더에 메모가 없습니다
             </div>
           )
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400 text-sm">
+          <div className="flex items-center justify-center h-full text-gray-500 dark:text-[#9d9d9d] text-sm">
             폴더를 선택하세요
           </div>
         )}

@@ -157,7 +157,7 @@ function SearchPanel({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="메모 검색..."
-              className="w-full px-3 py-2 pl-9 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 dark:focus:ring-indigo-500"
+              className="w-full px-3 py-2 pl-9 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-indigo-500"
             />
             <svg
               className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
@@ -203,7 +203,7 @@ function SearchPanel({
                     className={`
                       group relative flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors mb-1
                       ${isSelected
-                        ? 'bg-orange-100 dark:bg-indigo-900/50 text-gray-900 dark:text-white'
+                        ? 'bg-amber-100 dark:bg-indigo-900/50 text-gray-900 dark:text-white'
                         : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                       }
                     `}

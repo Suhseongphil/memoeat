@@ -79,7 +79,7 @@ function ActivityBar({ activeView, onViewChange, isCollapsed, onToggleCollapse }
             {view.icon}
             {/* 활성 표시 바 */}
             {activeView === view.id && !isCollapsed && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-orange-500 dark:bg-indigo-500 rounded-r" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-amber-500 dark:bg-indigo-500 rounded-r" />
             )}
           </button>
         ))}

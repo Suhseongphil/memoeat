@@ -351,10 +351,10 @@ function FolderItem({
       {/* 상단 드롭 인디케이터 */}
       {dropPosition === 'before' && (
         <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
-          <div className="h-1 bg-orange-500 dark:bg-indigo-500 animate-pulse shadow-lg" />
-          <div className="absolute top-0 left-0 right-0 h-8 bg-orange-100 dark:bg-indigo-900/40 opacity-60 -translate-y-1/2" />
+          <div className="h-1 bg-amber-500 dark:bg-indigo-500 animate-pulse shadow-lg" />
+          <div className="absolute top-0 left-0 right-0 h-8 bg-amber-100 dark:bg-indigo-900/40 opacity-60 -translate-y-1/2" />
           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div className="px-3 py-1 bg-orange-500 dark:bg-indigo-500 text-white text-xs font-semibold rounded-full shadow-lg whitespace-nowrap">
+            <div className="px-3 py-1 bg-amber-500 dark:bg-indigo-500 text-white text-xs font-semibold rounded-full shadow-lg whitespace-nowrap">
               ↑ 위에 놓기
             </div>
           </div>
@@ -374,9 +374,9 @@ function FolderItem({
         data-folder-item
         className={`
           relative flex items-center px-2 py-1 rounded-lg transition-all duration-200 group
-          ${isSelected ? 'bg-orange-100 dark:bg-indigo-900/30' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'}
+          ${isSelected ? 'bg-amber-100 dark:bg-indigo-900/30' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'}
           ${isDragging ? 'opacity-30 cursor-grabbing scale-95' : 'cursor-grab hover:scale-[1.01]'}
-          ${dropPosition === 'inside' ? 'ring-4 ring-orange-500 dark:ring-indigo-500 bg-orange-50 dark:bg-indigo-900/20 scale-[1.03] shadow-xl' : ''}
+          ${dropPosition === 'inside' ? 'ring-4 ring-amber-500 dark:ring-indigo-500 bg-amber-50 dark:bg-indigo-900/20 scale-[1.03] shadow-xl' : ''}
         `}
         style={{ paddingLeft: `${level * 16 + 8}px`, userSelect: 'none' }}
         onClick={handleClick}
@@ -401,7 +401,7 @@ function FolderItem({
         {/* 폴더 아이콘 */}
         <svg
           className={`w-4 h-4 mr-2 flex-shrink-0 ${
-            isExpanded ? 'text-orange-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'
+            isExpanded ? 'text-amber-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'
           }`}
           fill="currentColor"
           viewBox="0 0 20 20"
@@ -418,14 +418,14 @@ function FolderItem({
             onChange={(e) => setEditName(e.target.value)}
             onBlur={handleRename}
             onKeyDown={handleKeyDown}
-            className="flex-1 px-1 py-0.5 text-sm bg-white dark:bg-gray-700 border border-orange-500 dark:border-indigo-500 rounded outline-none"
+            className="flex-1 px-1 py-0.5 text-sm bg-white dark:bg-gray-700 border border-amber-500 dark:border-indigo-500 rounded outline-none"
             onClick={(e) => e.stopPropagation()}
           />
         ) : (
           <span
             className={`flex-1 text-sm truncate ${
               isSelected
-                ? 'text-orange-700 dark:text-indigo-300 font-medium'
+                ? 'text-amber-700 dark:text-indigo-300 font-medium'
                 : 'text-gray-700 dark:text-gray-300'
             }`}
           >
@@ -562,10 +562,10 @@ function FolderItem({
       {/* 하단 드롭 인디케이터 */}
       {dropPosition === 'after' && (
         <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
-          <div className="h-1 bg-orange-500 dark:bg-indigo-500 animate-pulse shadow-lg" />
-          <div className="absolute bottom-0 left-0 right-0 h-8 bg-orange-100 dark:bg-indigo-900/40 opacity-60 translate-y-1/2" />
+          <div className="h-1 bg-amber-500 dark:bg-indigo-500 animate-pulse shadow-lg" />
+          <div className="absolute bottom-0 left-0 right-0 h-8 bg-amber-100 dark:bg-indigo-900/40 opacity-60 translate-y-1/2" />
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
-            <div className="px-3 py-1 bg-orange-500 dark:bg-indigo-500 text-white text-xs font-semibold rounded-full shadow-lg whitespace-nowrap">
+            <div className="px-3 py-1 bg-amber-500 dark:bg-indigo-500 text-white text-xs font-semibold rounded-full shadow-lg whitespace-nowrap">
               ↓ 아래에 놓기
             </div>
           </div>

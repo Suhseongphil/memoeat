@@ -1,23 +1,16 @@
 import { useState } from 'react'
 import { useAuthStore } from '../../stores/authStore'
+import ThemeModal from './ThemeModal'
+import { getThemeById } from '../../config/themes'
 
 function SettingsModal({ isOpen, onClose }) {
   const { preferences, updatePreferences } = useAuthStore()
   const [isLoading, setIsLoading] = useState(false)
+  const [isThemeModalOpen, setIsThemeModalOpen] = useState(false)
 
   if (!isOpen) return null
 
-  const handleThemeToggle = async () => {
-    setIsLoading(true)
-    try {
-      const newTheme = preferences.theme === 'light' ? 'dark' : 'light'
-      await updatePreferences({ theme: newTheme })
-    } catch (error) {
-      alert(`테마 변경 실패: ${error.message}`)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const currentTheme = getThemeById(preferences?.theme || 'default')
 
   const handleSidebarPositionToggle = async () => {
     setIsLoading(true)
@@ -57,31 +50,21 @@ function SettingsModal({ isOpen, onClose }) {
 
         {/* Settings Options */}
         <div className="space-y-4">
-          {/* Dark Mode Toggle */}
+          {/* Theme Selection */}
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1">
               <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                다크 모드
+                테마
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                {preferences.theme === 'dark' ? '어두운 테마 사용 중' : '밝은 테마 사용 중'}
+                현재 테마: {currentTheme.name}
               </p>
             </div>
             <button
-              onClick={handleThemeToggle}
-              disabled={isLoading}
-              className={`
-                relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-                ${preferences.theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200'}
-                ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-              `}
+              onClick={() => setIsThemeModalOpen(true)}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
             >
-              <span
-                className={`
-                  inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-                  ${preferences.theme === 'dark' ? 'translate-x-6' : 'translate-x-1'}
-                `}
-              />
+              테마 변경
             </button>
           </div>
 
@@ -121,6 +104,12 @@ function SettingsModal({ isOpen, onClose }) {
           </p>
         </div>
       </div>
+
+      {/* Theme Modal */}
+      <ThemeModal
+        isOpen={isThemeModalOpen}
+        onClose={() => setIsThemeModalOpen(false)}
+      />
     </div>
   )
 }

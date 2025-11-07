@@ -26,17 +26,12 @@ function MainPage() {
   // 사이드바 위치 결정
   const sidebarPosition = preferences?.sidebarPosition || 'left'
 
-  // 사용자 인증 확인
+  // 다크모드 여부
+  const isDark = preferences?.theme === 'dark'
+
+  // 사용자 정보 로드 (ProtectedRoute에서 이미 인증 체크함)
   useEffect(() => {
-    const checkAuth = async () => {
-      const { user: currentUser, isApproved, error } = await getCurrentUser()
-      if (error || !currentUser || !isApproved) {
-        navigate('/login')
-        return
-      }
-      fetchUser()
-    }
-    checkAuth()
+    fetchUser()
   }, [])
 
   // 폴더 목록 가져오기
@@ -377,17 +372,25 @@ function MainPage() {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+      <div className={`min-h-screen flex items-center justify-center ${
+        isDark ? 'bg-[#1e1e1e]' : 'bg-white'
+      }`}>
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-orange-500 dark:border-indigo-500 border-t-transparent"></div>
-          <p className="mt-4 text-gray-700 dark:text-gray-300">로딩 중...</p>
+          <div className={`inline-block animate-spin rounded-full h-12 w-12 border-4 border-t-transparent ${
+            isDark ? 'border-[#569cd6]' : 'border-blue-500'
+          }`}></div>
+          <p className={`mt-4 ${
+            isDark ? 'text-[#cccccc]' : 'text-gray-700'
+          }`}>로딩 중...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className={`h-screen flex flex-col ${
+      isDark ? 'bg-[#1e1e1e]' : 'bg-white'
+    }`}>
       {/* 헤더 */}
       <Header onMenuToggle={handleMenuToggle} />
 
