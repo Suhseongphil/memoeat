@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { signUp } from '../services/auth'
+import { applyTheme, initializeTheme } from '../config/theme'
 import DarkModeToggle from '../components/common/DarkModeToggle'
 import logoLight from '../assets/images/memoeat_logo_light_border.svg'
 import logoDark from '../assets/images/memoeat_logo_dark.svg'
@@ -16,18 +17,16 @@ function SignUpPage() {
   const [error, setError] = useState('')
   const [isDark, setIsDark] = useState(false)
 
-  // 다크모드 초기 상태 설정 및 변경 감지
+  // 초기 테마 설정 (CSS Variables 적용)
   useEffect(() => {
-    const dark = localStorage.getItem('darkMode') === 'true'
+    const dark = initializeTheme()
     setIsDark(dark)
-    if (dark) {
-      document.documentElement.classList.add('dark')
-    }
 
     // 다크모드 변경 이벤트 리스너
     const handleDarkModeChange = () => {
       const newDark = localStorage.getItem('darkMode') === 'true'
       setIsDark(newDark)
+      applyTheme(newDark)
     }
 
     window.addEventListener('darkModeChange', handleDarkModeChange)
@@ -151,9 +150,9 @@ function SignUpPage() {
                 required
                 className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:border-transparent transition-all ${
                   isDark
-                    ? 'border-[#3e3e42] bg-[#1e1e1e] text-[#cccccc] focus:ring-white'
-                    : 'border-gray-300 bg-white text-gray-900 focus:ring-gray-900'
-                }`}
+                    ? 'border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]'
+                    : 'border-gray-300 bg-white text-gray-900'
+                } focus:ring-[var(--color-primary)]`}
                 placeholder="your@email.com"
               />
             </div>
@@ -174,9 +173,9 @@ function SignUpPage() {
                 required
                 className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:border-transparent transition-all ${
                   isDark
-                    ? 'border-[#3e3e42] bg-[#1e1e1e] text-[#cccccc] focus:ring-white'
-                    : 'border-gray-300 bg-white text-gray-900 focus:ring-gray-900'
-                }`}
+                    ? 'border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]'
+                    : 'border-gray-300 bg-white text-gray-900'
+                } focus:ring-[var(--color-primary)]`}
                 placeholder="최소 6자 이상"
               />
             </div>
@@ -197,9 +196,9 @@ function SignUpPage() {
                 required
                 className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:border-transparent transition-all ${
                   isDark
-                    ? 'border-[#3e3e42] bg-[#1e1e1e] text-[#cccccc] focus:ring-white'
-                    : 'border-gray-300 bg-white text-gray-900 focus:ring-gray-900'
-                }`}
+                    ? 'border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]'
+                    : 'border-gray-300 bg-white text-gray-900'
+                } focus:ring-[var(--color-primary)]`}
                 placeholder="비밀번호 재입력"
               />
             </div>
@@ -221,11 +220,7 @@ function SignUpPage() {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-3 px-4 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                isDark
-                  ? 'bg-white hover:bg-gray-100 text-gray-900'
-                  : 'bg-gray-900 hover:bg-gray-800 text-white'
-              }`}
+              className="w-full py-3 px-4 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white"
             >
               {loading ? '회원가입 중...' : '회원가입'}
             </button>
@@ -238,11 +233,7 @@ function SignUpPage() {
             이미 계정이 있으신가요?{' '}
             <Link
               to="/login"
-              className={`font-medium ${
-                isDark
-                  ? 'text-white hover:text-gray-300'
-                  : 'text-gray-900 hover:text-gray-700'
-              }`}
+              className="font-medium text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]"
             >
               로그인
             </Link>

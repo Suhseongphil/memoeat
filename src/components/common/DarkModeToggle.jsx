@@ -1,21 +1,22 @@
 import { useState, useEffect } from 'react'
+import { applyTheme, initializeTheme } from '../../config/theme'
 
 function DarkModeToggle() {
   const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
-    // 초기 다크모드 상태 설정
-    const dark = localStorage.getItem('darkMode') === 'true'
+    // 초기 테마 설정 (CSS Variables 적용)
+    const dark = initializeTheme()
     setIsDark(dark)
-    if (dark) {
-      document.documentElement.classList.add('dark')
-    }
   }, [])
 
   const toggleDarkMode = () => {
     const newDarkMode = !isDark
     setIsDark(newDarkMode)
     localStorage.setItem('darkMode', newDarkMode)
+
+    // CSS Variables 테마 적용
+    applyTheme(newDarkMode)
 
     if (newDarkMode) {
       document.documentElement.classList.add('dark')

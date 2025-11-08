@@ -225,7 +225,7 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
       {/* 상단 드롭 인디케이터 */}
       {dropPosition === 'before' && (
         <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
-          <div className="h-0.5 bg-amber-500 dark:bg-indigo-500" />
+          <div className="h-0.5 bg-amber-500 dark:bg-[#569cd6]" />
         </div>
       )}
 
@@ -240,7 +240,7 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
         onClick={handleClick}
         className={`
           relative flex items-center px-2 py-1 transition-all duration-200 group
-          ${isSelected ? 'bg-amber-100 dark:bg-indigo-900/30' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'}
+          ${isSelected ? 'bg-amber-100 dark:bg-[#1e1e1e]' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'}
           ${isDragging ? 'opacity-30 cursor-grabbing' : 'cursor-pointer'}
         `}
         style={{
@@ -251,7 +251,7 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
       {/* 하단 드롭 인디케이터 */}
       {dropPosition === 'after' && (
         <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
-          <div className="h-0.5 bg-amber-500 dark:bg-indigo-500" />
+          <div className="h-0.5 bg-amber-500 dark:bg-[#569cd6]" />
         </div>
       )}
       {/* 파일 아이콘 */}
@@ -278,7 +278,7 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
           onChange={(e) => setEditTitle(e.target.value)}
           onBlur={handleRename}
           onKeyDown={handleKeyDown}
-          className="flex-1 px-1 py-0.5 text-sm bg-white dark:bg-gray-700 border border-amber-500 dark:border-indigo-500 rounded outline-none"
+          className="flex-1 px-1 py-0.5 text-sm bg-white dark:bg-gray-700 border border-amber-500 dark:border-[#569cd6] rounded outline-none"
           onClick={(e) => e.stopPropagation()}
         />
       ) : (
@@ -286,7 +286,7 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
           <span
             className={`flex-1 text-sm truncate ${
               isSelected
-                ? 'text-amber-700 dark:text-indigo-300 font-medium'
+                ? 'text-amber-700 dark:text-[#569cd6] font-medium'
                 : 'text-gray-700 dark:text-gray-300'
             }`}
           >
@@ -460,7 +460,7 @@ function NoteItem({ note, selectedNoteId, onNoteSelect, onDeleteNote }) {
       onClick={() => onNoteSelect(note.id)}
       className={`p-4 cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
         isSelected
-          ? 'bg-amber-50 dark:bg-indigo-900/20 border-l-4 border-amber-500 dark:border-indigo-500'
+          ? 'bg-amber-50 dark:bg-[#1e1e1e]/20 border-l-4 border-amber-500 dark:border-[#569cd6]'
           : ''
       } ${isDragging ? 'opacity-30 scale-95' : 'hover:scale-[1.01]'}`}
       style={{ userSelect: 'none' }}
@@ -480,7 +480,7 @@ function NoteItem({ note, selectedNoteId, onNoteSelect, onDeleteNote }) {
             <h3
               className={`font-medium truncate ${
                 isSelected
-                  ? 'text-amber-700 dark:text-indigo-300'
+                  ? 'text-amber-700 dark:text-[#569cd6]'
                   : 'text-gray-900 dark:text-white'
               }`}
             >

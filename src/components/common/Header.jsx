@@ -97,7 +97,7 @@ function Header({ onMenuToggle, showMenuButton = true }) {
           {isAdmin && (
             <Link
               to="/admin"
-              className="hidden sm:flex items-center px-3 py-2 text-sm font-medium text-amber-600 dark:text-indigo-400 hover:bg-amber-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="hidden sm:flex items-center px-3 py-2 text-sm font-medium text-amber-600 dark:text-[#569cd6] hover:bg-amber-50 dark:hover:bg-[#2d2d30] rounded-lg transition-colors"
             >
               <svg
                 className="w-4 h-4 mr-1"

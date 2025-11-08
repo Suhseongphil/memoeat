@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { applyTheme, initializeTheme } from './config/theme'
 import logoLight from './assets/images/memoeat_logo_light_border.svg'
 import logoDark from './assets/images/memoeat_logo_dark.svg'
 
@@ -7,17 +8,15 @@ function App() {
   const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
-    // 다크모드 초기 상태 설정 및 변경 감지
-    const dark = localStorage.getItem('darkMode') === 'true'
+    // 초기 테마 설정 (CSS Variables 적용)
+    const dark = initializeTheme()
     setIsDark(dark)
-    if (dark) {
-      document.documentElement.classList.add('dark')
-    }
 
     // 다크모드 변경 이벤트 리스너
     const handleDarkModeChange = () => {
       const newDark = localStorage.getItem('darkMode') === 'true'
       setIsDark(newDark)
+      applyTheme(newDark)
     }
 
     window.addEventListener('darkModeChange', handleDarkModeChange)
@@ -30,6 +29,9 @@ function App() {
     const newDarkMode = !isDark
     setIsDark(newDarkMode)
     localStorage.setItem('darkMode', newDarkMode)
+
+    // CSS Variables 테마 적용
+    applyTheme(newDarkMode)
 
     if (newDarkMode) {
       document.documentElement.classList.add('dark')
@@ -109,11 +111,7 @@ function App() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <button
             onClick={handleLoginClick}
-            className={`w-full sm:w-auto px-8 py-3 font-medium rounded-lg shadow-lg hover:shadow-xl transition-all ${
-              isDark
-                ? 'bg-white hover:bg-gray-100 text-gray-900'
-                : 'bg-gray-900 hover:bg-gray-800 text-white'
-            }`}
+            className="w-full sm:w-auto px-8 py-3 font-medium rounded-lg shadow-lg hover:shadow-xl transition-all bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white"
           >
             로그인
           </button>
@@ -121,9 +119,9 @@ function App() {
             onClick={handleSignUpClick}
             className={`w-full sm:w-auto px-8 py-3 font-medium rounded-lg shadow-lg hover:shadow-xl transition-all border-2 ${
               isDark
-                ? 'bg-[#252526] hover:bg-[#2d2d30] text-white border-white'
-                : 'bg-white hover:bg-gray-50 text-gray-900 border-gray-900'
-            }`}
+                ? 'bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)]'
+                : 'bg-white hover:bg-gray-50'
+            } text-[var(--color-primary)] border-[var(--color-primary)]`}
           >
             회원가입
           </button>
