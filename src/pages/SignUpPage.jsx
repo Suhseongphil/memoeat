@@ -78,7 +78,7 @@ function SignUpPage() {
         navigate('/login')
       } else if (needsApproval) {
         // 일반 사용자는 승인 대기 메시지 표시
-        alert('회원가입이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.')
+        alert('회원가입이 완료되었습니다. 이메일 인증 후 로그인이 가능합니다.')
         navigate('/login')
       }
     } catch (err) {
@@ -89,11 +89,10 @@ function SignUpPage() {
   }
 
   return (
-    <div className={`min-h-screen flex items-center justify-center p-4 ${
-      isDark
+    <div className={`min-h-screen flex items-center justify-center p-4 ${isDark
         ? 'bg-[#1e1e1e]'
         : 'bg-white'
-    }`}>
+      }`}>
       <DarkModeToggle />
 
       <div className="w-full max-w-md">
@@ -114,21 +113,18 @@ function SignUpPage() {
         </div>
 
         {/* 회원가입 폼 */}
-        <div className={`rounded-2xl shadow-xl p-8 ${
-          isDark ? 'bg-[#252526] border border-[#3e3e42]' : 'bg-white border border-gray-200'
-        }`}>
-          <h2 className={`text-2xl font-bold mb-6 ${
-            isDark ? 'text-[#cccccc]' : 'text-gray-900'
+        <div className={`rounded-2xl shadow-xl p-8 ${isDark ? 'bg-[#252526] border border-[#3e3e42]' : 'bg-white border border-gray-200'
           }`}>
+          <h2 className={`text-2xl font-bold mb-6 ${isDark ? 'text-[#cccccc]' : 'text-gray-900'
+            }`}>
             회원가입
           </h2>
 
           {error && (
-            <div className={`mb-4 p-3 rounded-lg text-sm ${
-              isDark
+            <div className={`mb-4 p-3 rounded-lg text-sm ${isDark
                 ? 'bg-red-900/30 border border-red-700 text-red-400'
                 : 'bg-red-100 border border-red-400 text-red-700'
-            }`}>
+              }`}>
               {error}
             </div>
           )}
@@ -136,9 +132,8 @@ function SignUpPage() {
           <form onSubmit={handleSubmit}>
             {/* 이메일 */}
             <div className="mb-4">
-              <label htmlFor="email" className={`block text-sm font-medium mb-2 ${
-                isDark ? 'text-[#cccccc]' : 'text-gray-700'
-              }`}>
+              <label htmlFor="email" className={`block text-sm font-medium mb-2 ${isDark ? 'text-[#cccccc]' : 'text-gray-700'
+                }`}>
                 이메일
               </label>
               <input
@@ -148,20 +143,18 @@ function SignUpPage() {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:border-transparent transition-all ${
-                  isDark
+                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:border-transparent transition-all ${isDark
                     ? 'border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]'
                     : 'border-gray-300 bg-white text-gray-900'
-                } focus:ring-[var(--color-primary)]`}
+                  } focus:ring-[var(--color-primary)]`}
                 placeholder="your@email.com"
               />
             </div>
 
             {/* 비밀번호 */}
             <div className="mb-4">
-              <label htmlFor="password" className={`block text-sm font-medium mb-2 ${
-                isDark ? 'text-[#cccccc]' : 'text-gray-700'
-              }`}>
+              <label htmlFor="password" className={`block text-sm font-medium mb-2 ${isDark ? 'text-[#cccccc]' : 'text-gray-700'
+                }`}>
                 비밀번호
               </label>
               <input
@@ -171,20 +164,18 @@ function SignUpPage() {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:border-transparent transition-all ${
-                  isDark
+                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:border-transparent transition-all ${isDark
                     ? 'border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]'
                     : 'border-gray-300 bg-white text-gray-900'
-                } focus:ring-[var(--color-primary)]`}
+                  } focus:ring-[var(--color-primary)]`}
                 placeholder="최소 6자 이상"
               />
             </div>
 
             {/* 비밀번호 확인 */}
             <div className="mb-6">
-              <label htmlFor="confirmPassword" className={`block text-sm font-medium mb-2 ${
-                isDark ? 'text-[#cccccc]' : 'text-gray-700'
-              }`}>
+              <label htmlFor="confirmPassword" className={`block text-sm font-medium mb-2 ${isDark ? 'text-[#cccccc]' : 'text-gray-700'
+                }`}>
                 비밀번호 확인
               </label>
               <input
@@ -194,25 +185,22 @@ function SignUpPage() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
-                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:border-transparent transition-all ${
-                  isDark
+                className={`w-full px-4 py-3 rounded-lg border focus:ring-2 focus:border-transparent transition-all ${isDark
                     ? 'border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]'
                     : 'border-gray-300 bg-white text-gray-900'
-                } focus:ring-[var(--color-primary)]`}
+                  } focus:ring-[var(--color-primary)]`}
                 placeholder="비밀번호 재입력"
               />
             </div>
 
             {/* 안내 메시지 */}
-            <div className={`mb-6 p-3 rounded-lg ${
-              isDark
+            <div className={`mb-6 p-3 rounded-lg ${isDark
                 ? 'bg-yellow-900/20 border border-yellow-800'
                 : 'bg-yellow-50 border border-yellow-200'
-            }`}>
-              <p className={`text-sm ${
-                isDark ? 'text-yellow-300' : 'text-yellow-800'
               }`}>
-                <strong>안내:</strong> 회원가입 후 관리자 승인이 필요합니다. 승인 후 로그인이 가능합니다.
+              <p className={`text-sm ${isDark ? 'text-yellow-300' : 'text-yellow-800'
+                }`}>
+                <strong>안내:</strong> 회원가입 후 이메일 인증이 필요합니다. 승인 후 로그인이 가능합니다.
               </p>
             </div>
 
@@ -227,9 +215,8 @@ function SignUpPage() {
           </form>
 
           {/* 로그인 링크 */}
-          <div className={`mt-6 text-center text-sm ${
-            isDark ? 'text-[#9d9d9d]' : 'text-gray-600'
-          }`}>
+          <div className={`mt-6 text-center text-sm ${isDark ? 'text-[#9d9d9d]' : 'text-gray-600'
+            }`}>
             이미 계정이 있으신가요?{' '}
             <Link
               to="/login"
