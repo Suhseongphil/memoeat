@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { applyTheme, initializeTheme } from './config/theme'
 import { getCurrentUser } from './services/auth'
-import logoLight from './assets/images/memoeat_logo_light_border.svg'
+import logoLight from './assets/images/memoeat_logo_amber_bg_white_text.svg'
 import logoDark from './assets/images/memoeat_logo_dark.svg'
 
 function App() {

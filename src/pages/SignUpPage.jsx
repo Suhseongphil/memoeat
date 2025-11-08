@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { signUp } from '../services/auth'
 import { applyTheme, initializeTheme } from '../config/theme'
 import DarkModeToggle from '../components/common/DarkModeToggle'
-import logoLight from '../assets/images/memoeat_logo_light_border.svg'
+import logoLight from '../assets/images/memoeat_logo_amber_bg_white_text.svg'
 import logoDark from '../assets/images/memoeat_logo_dark.svg'
 
 function SignUpPage() {
@@ -78,7 +78,7 @@ function SignUpPage() {
         navigate('/login')
       } else if (needsApproval) {
         // 일반 사용자는 승인 대기 메시지 표시
-        alert('회원가입이 완료되었습니다. 이메일 인증 후 로그인이 가능합니다.')
+        alert('회원가입이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.')
         navigate('/login')
       }
     } catch (err) {
@@ -200,7 +200,7 @@ function SignUpPage() {
               }`}>
               <p className={`text-sm ${isDark ? 'text-yellow-300' : 'text-yellow-800'
                 }`}>
-                <strong>안내:</strong> 회원가입 후 이메일 인증이 필요합니다. 승인 후 로그인이 가능합니다.
+                <strong>안내:</strong> 회원가입 후 관리자 승인이 필요합니다. 승인 후 로그인이 가능합니다.
               </p>
             </div>
 

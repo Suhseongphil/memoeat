@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { signOut } from '../../services/auth'
 import { useAuthStore } from '../../stores/authStore'
-import logoLight from '../../assets/images/memoeat_logo_light_border.svg'
+import logoLight from '../../assets/images/memoeat_logo_amber_bg_white_text.svg'
 import logoDark from '../../assets/images/memoeat_logo_dark.svg'
 
 function Header({ onMenuToggle, showMenuButton = true }) {

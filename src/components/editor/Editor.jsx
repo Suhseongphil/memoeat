@@ -17,6 +17,7 @@ import { debounce } from 'lodash'
 import { toggleFavorite } from '../../services/notes'
 import LinkModal from './LinkModal'
 import { FontSize } from './extensions/FontSize'
+import { LineHeight } from './extensions/LineHeight'
 import './tiptap.css'
 
 function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
@@ -28,6 +29,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
   const [showFontFamilyPicker, setShowFontFamilyPicker] = useState(false)
   const [showSpecialCharPicker, setShowSpecialCharPicker] = useState(false)
   const [showAlignmentPicker, setShowAlignmentPicker] = useState(false)
+  const [showLineHeightPicker, setShowLineHeightPicker] = useState(false)
   const [saveStatus, setSaveStatus] = useState('saved') // 'saved' | 'saving' | 'error'
   const [isCopied, setIsCopied] = useState(false) // 클립보드 복사 상태
 
@@ -50,6 +52,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
       setShowFontFamilyPicker(false)
       setShowSpecialCharPicker(false)
       setShowAlignmentPicker(false)
+      setShowLineHeightPicker(false)
     }
 
     document.addEventListener('mousedown', handleClickOutside)
@@ -110,6 +113,11 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
         types: ['textStyle']
       }),
       FontSize,
+      LineHeight.configure({
+        types: ['paragraph', 'heading'],
+        lineHeights: ['1.0', '1.15', '1.5', '1.75', '2.0', '2.5', '3.0'],
+        defaultLineHeight: '1.5'
+      }),
 
       // 링크
       Link.configure({
@@ -602,6 +610,17 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
     { name: '양쪽', value: 'justify', icon: '⬌' }
   ]
 
+  // 줄간격 옵션
+  const lineHeights = [
+    { name: '1.0', value: '1.0' },
+    { name: '1.15', value: '1.15' },
+    { name: '1.5', value: '1.5' },
+    { name: '1.75', value: '1.75' },
+    { name: '2.0', value: '2.0' },
+    { name: '2.5', value: '2.5' },
+    { name: '3.0', value: '3.0' },
+  ]
+
   if (!note) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-[#1e1e1e]">
@@ -644,6 +663,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowTextColorPicker(false)
                 setShowSpecialCharPicker(false)
                 setShowAlignmentPicker(false)
+                setShowLineHeightPicker(false)
               }}
               className="p-2 border border-gray-300 dark:border-[#3e3e42] rounded hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors bg-white dark:bg-[#252526]"
               title="글꼴"
@@ -686,6 +706,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowTextColorPicker(false)
                 setShowSpecialCharPicker(false)
                 setShowAlignmentPicker(false)
+                setShowLineHeightPicker(false)
               }}
               className="p-2 border border-gray-300 dark:border-[#3e3e42] rounded hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors bg-white dark:bg-[#252526]"
               title="글자 크기"
@@ -752,6 +773,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowFontFamilyPicker(false)
                 setShowSpecialCharPicker(false)
                 setShowAlignmentPicker(false)
+                setShowLineHeightPicker(false)
               }}
               className="p-2 border border-gray-300 dark:border-[#3e3e42] rounded hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors bg-white dark:bg-[#252526]"
               title="글자 색상"
@@ -795,6 +817,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowFontSizePicker(false)
                 setShowFontFamilyPicker(false)
                 setShowSpecialCharPicker(false)
+                setShowLineHeightPicker(false)
               }}
               className="p-2 border border-gray-300 dark:border-[#3e3e42] rounded hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors bg-white dark:bg-[#252526]"
               title="정렬"
@@ -832,6 +855,50 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
 
           <div className="w-px h-6 bg-gray-300 dark:bg-[#3e3e42]"></div>
 
+          {/* 줄간격 */}
+          <div className="relative group dropdown-container">
+            <button
+              onClick={() => {
+                setShowLineHeightPicker(!showLineHeightPicker)
+                setShowTextColorPicker(false)
+                setShowFontSizePicker(false)
+                setShowFontFamilyPicker(false)
+                setShowSpecialCharPicker(false)
+                setShowAlignmentPicker(false)
+              }}
+              className="p-2 border border-gray-300 dark:border-[#3e3e42] rounded hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors bg-white dark:bg-[#252526]"
+              title="줄간격"
+            >
+              <svg className="w-5 h-5 text-gray-700 dark:text-[#cccccc]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            {/* 툴팁 */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+              줄간격
+            </div>
+            {showLineHeightPicker && (
+              <div className="absolute top-full mt-1 p-2 bg-white dark:bg-[#252526] border border-gray-200 dark:border-[#3e3e42] rounded-lg shadow-lg z-10 min-w-[100px]">
+                <div className="flex flex-col gap-1">
+                  {lineHeights.map((height) => (
+                    <button
+                      key={height.value}
+                      onClick={() => {
+                        editor.chain().focus().setLineHeight(height.value).run()
+                        setShowLineHeightPicker(false)
+                      }}
+                      className="px-3 py-2 text-left rounded hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors text-sm text-gray-900 dark:text-[#cccccc]"
+                    >
+                      {height.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="w-px h-6 bg-gray-300 dark:bg-[#3e3e42]"></div>
+
           {/* 특수문자 */}
           <div className="relative group dropdown-container">
             <button
@@ -841,6 +908,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
                 setShowFontSizePicker(false)
                 setShowFontFamilyPicker(false)
                 setShowAlignmentPicker(false)
+                setShowLineHeightPicker(false)
               }}
               className="p-2 border border-gray-300 dark:border-[#3e3e42] rounded hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors bg-white dark:bg-[#252526]"
               title="특수문자"

@@ -1,0 +1,18 @@
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 메모장 아이콘 + 큰 M -->
+  
+  <g transform="translate(40, 40)">
+    <!-- 메모장 본체 -->
+    <rect x="-20" y="-25" width="40" height="50" rx="3" fill="#FFFFFF" stroke="#D4A574" stroke-width="2"/>
+    
+    <!-- 나선형 링 (상단) -->
+    <circle cx="-12" cy="-28" r="2.5" fill="none" stroke="#D4A574" stroke-width="1.5"/>
+    <circle cx="0" cy="-28" r="2.5" fill="none" stroke="#D4A574" stroke-width="1.5"/>
+    <circle cx="12" cy="-28" r="2.5" fill="none" stroke="#D4A574" stroke-width="1.5"/>
+    
+    <!-- 큰 M (앰버 색상) -->
+    <text x="0" y="8" font-family="Arial, sans-serif" font-size="36" font-weight="700" fill="#f59e0b" text-anchor="middle" dominant-baseline="middle">
+      M
+    </text>
+  </g>
+</svg>

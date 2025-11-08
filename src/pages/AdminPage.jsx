@@ -4,7 +4,7 @@ import { useAdmin } from '../hooks/useAdmin'
 import { getPendingApprovals, getApprovedUsers, approveUser, rejectUser, signOut } from '../services/auth'
 import DarkModeToggle from '../components/common/DarkModeToggle'
 import logoLight from '../assets/images/memoeat_logo_dark.svg'
-import logoDark from '../assets/images/memoeat_logo_light_border.svg'
+import logoDark from '../assets/images/memoeat_logo_amber_bg_white_text.svg'
 
 function AdminPage() {
   const navigate = useNavigate()

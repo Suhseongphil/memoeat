@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { signIn } from '../services/auth'
 import { applyTheme, initializeTheme } from '../config/theme'
 import DarkModeToggle from '../components/common/DarkModeToggle'
-import logoLight from '../assets/images/memoeat_logo_light_border.svg'
+import logoLight from '../assets/images/memoeat_logo_amber_bg_white_text.svg'
 import logoDark from '../assets/images/memoeat_logo_dark.svg'
 
 function LoginPage() {

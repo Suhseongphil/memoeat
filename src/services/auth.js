@@ -11,10 +11,7 @@ export const signUp = async (email, password) => {
     // 1. Supabase Auth에 사용자 등록
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`
-      }
+      password
     })
 
     if (authError) throw authError
@@ -123,8 +120,6 @@ export const signIn = async (email, password, rememberMe = false) => {
 
     if (error.message.includes('Invalid login credentials')) {
       errorMessage = '이메일 또는 비밀번호가 올바르지 않습니다.'
-    } else if (error.message.includes('Email not confirmed')) {
-      errorMessage = '이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요.'
     } else if (error.message.includes('관리자 승인')) {
       errorMessage = error.message // 이미 한글 메시지
     } else if (error.message) {
