@@ -97,15 +97,47 @@ export const signIn = async (email, password, rememberMe = false) => {
     // Supabase는 내부적으로 storage key를 사용하므로,
     // 로그인 직후 세션 데이터를 확실하게 올바른 storage에 저장
     if (authData.session) {
-      const storageKey = `sb-${import.meta.env.VITE_SUPABASE_URL.split('//')[1].split('.')[0]}-auth-token`
+      // Supabase storage key 형식: sb-{project-ref}-auth-token
+      // 모든 가능한 key를 찾아서 처리
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const projectRef = supabaseUrl.split('//')[1].split('.')[0]
+      const possibleKeys = [
+        `sb-${projectRef}-auth-token`,
+        `supabase.auth.token`,
+        `sb-auth-token`
+      ]
+
+      console.log('🔐 Auto-login setup:', {
+        targetStorage,
+        projectRef,
+        rememberMe
+      })
+
+      // 현재 storage에서 Supabase가 실제로 사용한 key 찾기
+      let actualKey = null
+      const checkStorage = targetStorage === 'local' ? localStorage : sessionStorage
+
+      for (let i = 0; i < checkStorage.length; i++) {
+        const key = checkStorage.key(i)
+        if (key && (key.includes('sb-') && key.includes('auth'))) {
+          actualKey = key
+          console.log('✅ Found Supabase auth key:', actualKey)
+          break
+        }
+      }
+
+      // 실제 key를 찾았다면 그것을 사용, 아니면 기본 key 사용
+      const storageKey = actualKey || `sb-${projectRef}-auth-token`
       const sessionData = JSON.stringify(authData.session)
 
       if (targetStorage === 'local') {
         localStorage.setItem(storageKey, sessionData)
         sessionStorage.removeItem(storageKey) // session에서 제거
+        console.log('💾 Saved to localStorage:', storageKey)
       } else {
         sessionStorage.setItem(storageKey, sessionData)
         localStorage.removeItem(storageKey) // local에서 제거
+        console.log('💾 Saved to sessionStorage:', storageKey)
       }
     }
 
@@ -177,10 +209,30 @@ export const signOut = async () => {
  */
 export const getCurrentUser = async () => {
   try {
+    console.log('🔍 Checking current user...')
+
+    // localStorage와 sessionStorage 확인
+    const localKeys = Object.keys(localStorage).filter(k => k.includes('sb-') && k.includes('auth'))
+    const sessionKeys = Object.keys(sessionStorage).filter(k => k.includes('sb-') && k.includes('auth'))
+
+    console.log('📦 Storage status:', {
+      localStorage: localKeys,
+      sessionStorage: sessionKeys
+    })
+
     const { data: { user }, error: userError } = await supabase.auth.getUser()
 
-    if (userError) throw userError
-    if (!user) return { user: null, session: null, error: null }
+    if (userError) {
+      console.log('❌ getUser error:', userError.message)
+      throw userError
+    }
+
+    if (!user) {
+      console.log('⚠️ No user found')
+      return { user: null, session: null, error: null }
+    }
+
+    console.log('✅ User found:', user.email)
 
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
     if (sessionError) throw sessionError
@@ -194,6 +246,11 @@ export const getCurrentUser = async () => {
 
     if (approvalError) throw approvalError
 
+    console.log('✅ Auth check complete:', {
+      email: user.email,
+      isApproved: approvalData.is_approved
+    })
+
     return {
       user,
       session,
@@ -201,7 +258,7 @@ export const getCurrentUser = async () => {
       error: null
     }
   } catch (error) {
-    console.error('GetCurrentUser error:', error)
+    console.error('❌ GetCurrentUser error:', error)
     return {
       user: null,
       session: null,
