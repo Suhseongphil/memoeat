@@ -3,30 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 // 커스텀 Storage Adapter: localStorage 또는 sessionStorage 동적 선택
 class CustomStorageAdapter {
   constructor() {
-    // 초기화 시 localStorage에 저장된 세션이 있는지 확인
-    const hasLocalSession = this.findAuthKey(localStorage) !== null
-    const hasSessionSession = this.findAuthKey(sessionStorage) !== null
-
-    if (hasLocalSession) {
-      this.storageType = 'local'
-      console.log('🔄 CustomStorage: Found session in localStorage, using local storage')
-    } else if (hasSessionSession) {
-      this.storageType = 'session'
-      console.log('🔄 CustomStorage: Found session in sessionStorage, using session storage')
-    } else {
-      this.storageType = 'local' // 기본값
-      console.log('🔄 CustomStorage: No session found, defaulting to local storage')
-    }
-  }
-
-  findAuthKey(storage) {
-    for (let i = 0; i < storage.length; i++) {
-      const key = storage.key(i)
-      if (key && key.includes('sb-') && key.includes('auth')) {
-        return key
-      }
-    }
-    return null
+    this.storageType = 'local' // 기본값
   }
 
   setStorageType(type) {
@@ -39,14 +16,37 @@ class CustomStorageAdapter {
   }
 
   getItem(key) {
-    const value = this.getStorage().getItem(key)
-    console.log(`📖 CustomStorage: getItem(${key}) from ${this.storageType}Storage:`, value ? 'found' : 'not found')
-    return value
+    // 양쪽 storage를 모두 확인 (이전에 저장된 세션 찾기)
+    let value = localStorage.getItem(key)
+    if (value) {
+      console.log(`📖 CustomStorage: getItem(${key}) found in localStorage`)
+      this.storageType = 'local' // localStorage에서 찾았으면 타입 업데이트
+      return value
+    }
+
+    value = sessionStorage.getItem(key)
+    if (value) {
+      console.log(`📖 CustomStorage: getItem(${key}) found in sessionStorage`)
+      this.storageType = 'session' // sessionStorage에서 찾았으면 타입 업데이트
+      return value
+    }
+
+    console.log(`📖 CustomStorage: getItem(${key}) not found in any storage`)
+    return null
   }
 
   setItem(key, value) {
+    const targetStorage = this.storageType === 'session' ? sessionStorage : localStorage
     console.log(`💾 CustomStorage: setItem(${key}) to ${this.storageType}Storage`)
-    this.getStorage().setItem(key, value)
+
+    targetStorage.setItem(key, value)
+
+    // 반대쪽 storage에서 제거
+    if (this.storageType === 'session') {
+      localStorage.removeItem(key)
+    } else {
+      sessionStorage.removeItem(key)
+    }
   }
 
   removeItem(key) {
