@@ -1,9 +1,10 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Header from '../components/common/Header'
 import Sidebar from '../components/sidebar/Sidebar'
 import TabBar from '../components/tabs/TabBar'
 import Editor from '../components/editor/Editor'
+import { SidebarSkeleton, EditorSkeleton } from '../components/common/SkeletonLoader'
 import { getNotes, createNote, updateNote, deleteNote, reorderNotes, toggleFavorite } from '../services/notes'
 import { getFolders, createFolder, updateFolder, deleteFolder, buildFolderTree, reorderFolders } from '../services/folders'
 import { useAuthStore } from '../stores/authStore'
@@ -385,6 +386,9 @@ function MainPage() {
     onPrevTab: handlePrevTab
   })
 
+  // 로딩 중일 때 스켈레톤 UI 표시
+  const isLoading = notesLoading || foldersLoading
+
   // ProtectedRoute에서 이미 인증 및 로딩 완료 상태이므로 여기서는 바로 렌더링
   return (
     <div className={`h-screen flex flex-col ${
@@ -395,48 +399,64 @@ function MainPage() {
 
       {/* 메인 컨텐츠 영역 */}
       <div className={`flex-1 flex overflow-hidden ${sidebarPosition === 'right' ? 'flex-row-reverse' : ''}`}>
-        {/* 사이드바 */}
-        <Sidebar
-          notes={notes}
-          selectedNoteId={activeTabId}
-          onNoteSelect={handleNoteSelect}
-          onNewNote={handleNewNote}
-          onDeleteNote={handleDeleteNote}
-          onRenameNote={handleRenameNote}
-          onToggleFavorite={handleToggleFavorite}
-          folders={folderTree}
-          selectedFolderId={selectedFolderId}
-          onFolderSelect={handleFolderSelect}
-          onNewFolder={handleNewFolder}
-          onRenameFolder={handleRenameFolder}
-          onDeleteFolder={handleDeleteFolder}
-          onMoveNote={handleMoveNote}
-          onMoveFolder={handleMoveFolder}
-          onReorderNote={handleReorderNote}
-          onReorderFolder={handleReorderFolder}
-          isOpen={sidebarOpen}
-          onClose={handleSidebarClose}
-          userName={userName}
-          sidebarPosition={sidebarPosition}
-        />
+        {/* 사이드바 - 로딩 시 스켈레톤 표시 */}
+        {isLoading ? (
+          <aside className={`
+            w-80 bg-white dark:bg-[#252526] border-r border-gray-200 dark:border-[#3e3e42]
+            lg:relative lg:translate-x-0
+            ${sidebarPosition === 'right' ? 'border-r-0 border-l' : ''}
+          `}>
+            <SidebarSkeleton />
+          </aside>
+        ) : (
+          <Sidebar
+            notes={notes}
+            selectedNoteId={activeTabId}
+            onNoteSelect={handleNoteSelect}
+            onNewNote={handleNewNote}
+            onDeleteNote={handleDeleteNote}
+            onRenameNote={handleRenameNote}
+            onToggleFavorite={handleToggleFavorite}
+            folders={folderTree}
+            selectedFolderId={selectedFolderId}
+            onFolderSelect={handleFolderSelect}
+            onNewFolder={handleNewFolder}
+            onRenameFolder={handleRenameFolder}
+            onDeleteFolder={handleDeleteFolder}
+            onMoveNote={handleMoveNote}
+            onMoveFolder={handleMoveFolder}
+            onReorderNote={handleReorderNote}
+            onReorderFolder={handleReorderFolder}
+            isOpen={sidebarOpen}
+            onClose={handleSidebarClose}
+            userName={userName}
+            sidebarPosition={sidebarPosition}
+          />
+        )}
 
         {/* 탭바 + 에디터 영역 */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* 탭바 */}
-          <TabBar
-            openedNotes={openedNotesData}
-            activeTabId={activeTabId}
-            onTabChange={handleTabChange}
-            onTabClose={handleTabClose}
-          />
+          {!isLoading && (
+            <TabBar
+              openedNotes={openedNotesData}
+              activeTabId={activeTabId}
+              onTabChange={handleTabChange}
+              onTabClose={handleTabClose}
+            />
+          )}
 
-          {/* 에디터 */}
-          <Editor
-            note={selectedNote}
-            onUpdateNote={handleUpdateNote}
-            onSave={handleSaveNote}
-            onDeleteNote={handleDeleteNote}
-          />
+          {/* 에디터 - 로딩 시 스켈레톤 표시 */}
+          {isLoading ? (
+            <EditorSkeleton />
+          ) : (
+            <Editor
+              note={selectedNote}
+              onUpdateNote={handleUpdateNote}
+              onSave={handleSaveNote}
+              onDeleteNote={handleDeleteNote}
+            />
+          )}
         </div>
       </div>
     </div>
