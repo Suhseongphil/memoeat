@@ -86,6 +86,7 @@ export const signIn = async (email, password, rememberMe = false) => {
     customStorage.setStorageType(targetStorage)
 
     // 2. Supabase Auth 로그인
+    // Supabase는 storage adapter를 통해 자동으로 올바른 storage에 세션을 저장합니다
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -93,55 +94,7 @@ export const signIn = async (email, password, rememberMe = false) => {
 
     if (authError) throw authError
 
-    // 3. 세션을 올바른 storage에 명시적으로 저장
-    // Supabase는 내부적으로 storage key를 사용하므로,
-    // 로그인 직후 세션 데이터를 확실하게 올바른 storage에 저장
-    if (authData.session) {
-      // Supabase storage key 형식: sb-{project-ref}-auth-token
-      // 모든 가능한 key를 찾아서 처리
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      const projectRef = supabaseUrl.split('//')[1].split('.')[0]
-      const possibleKeys = [
-        `sb-${projectRef}-auth-token`,
-        `supabase.auth.token`,
-        `sb-auth-token`
-      ]
-
-      console.log('🔐 Auto-login setup:', {
-        targetStorage,
-        projectRef,
-        rememberMe
-      })
-
-      // 현재 storage에서 Supabase가 실제로 사용한 key 찾기
-      let actualKey = null
-      const checkStorage = targetStorage === 'local' ? localStorage : sessionStorage
-
-      for (let i = 0; i < checkStorage.length; i++) {
-        const key = checkStorage.key(i)
-        if (key && (key.includes('sb-') && key.includes('auth'))) {
-          actualKey = key
-          console.log('✅ Found Supabase auth key:', actualKey)
-          break
-        }
-      }
-
-      // 실제 key를 찾았다면 그것을 사용, 아니면 기본 key 사용
-      const storageKey = actualKey || `sb-${projectRef}-auth-token`
-      const sessionData = JSON.stringify(authData.session)
-
-      if (targetStorage === 'local') {
-        localStorage.setItem(storageKey, sessionData)
-        sessionStorage.removeItem(storageKey) // session에서 제거
-        console.log('💾 Saved to localStorage:', storageKey)
-      } else {
-        sessionStorage.setItem(storageKey, sessionData)
-        localStorage.removeItem(storageKey) // local에서 제거
-        console.log('💾 Saved to sessionStorage:', storageKey)
-      }
-    }
-
-    // 4. 승인 여부 확인
+    // 3. 승인 여부 확인
     const { data: approvalData, error: approvalError } = await supabase
       .from('user_approvals')
       .select('is_approved, approved_at')
@@ -150,7 +103,7 @@ export const signIn = async (email, password, rememberMe = false) => {
 
     if (approvalError) throw approvalError
 
-    // 5. 승인되지 않은 경우 로그아웃 처리
+    // 4. 승인되지 않은 경우 로그아웃 처리
     if (!approvalData.is_approved) {
       await supabase.auth.signOut()
       throw new Error('관리자 승인 대기 중입니다. 승인 후 다시 로그인해주세요.')
@@ -209,33 +162,25 @@ export const signOut = async () => {
  */
 export const getCurrentUser = async () => {
   try {
-    console.log('🔍 Checking current user...')
-
-    // localStorage와 sessionStorage 확인
-    const localKeys = Object.keys(localStorage).filter(k => k.includes('sb-') && k.includes('auth'))
-    const sessionKeys = Object.keys(sessionStorage).filter(k => k.includes('sb-') && k.includes('auth'))
-
-    console.log('📦 Storage status:', {
-      localStorage: localKeys,
-      sessionStorage: sessionKeys
-    })
-
+    // Supabase에서 사용자 정보 가져오기
+    // CustomStorageAdapter의 getItem이 자동으로 양쪽 storage를 확인하고 올바른 세션을 반환합니다
     const { data: { user }, error: userError } = await supabase.auth.getUser()
 
     if (userError) {
-      console.log('❌ getUser error:', userError.message)
       throw userError
     }
 
     if (!user) {
-      console.log('⚠️ No user found')
-      return { user: null, session: null, error: null }
+      return { user: null, session: null, isApproved: false, error: null }
     }
 
-    console.log('✅ User found:', user.email)
-
+    // 세션 정보 가져오기
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
     if (sessionError) throw sessionError
+
+    if (!session) {
+      return { user: null, session: null, isApproved: false, error: null }
+    }
 
     // 승인 여부 확인
     const { data: approvalData, error: approvalError } = await supabase
@@ -245,11 +190,6 @@ export const getCurrentUser = async () => {
       .single()
 
     if (approvalError) throw approvalError
-
-    console.log('✅ Auth check complete:', {
-      email: user.email,
-      isApproved: approvalData.is_approved
-    })
 
     return {
       user,

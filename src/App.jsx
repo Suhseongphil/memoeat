@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { applyTheme, initializeTheme } from './config/theme'
+import { getCurrentUser } from './services/auth'
 import logoLight from './assets/images/memoeat_logo_light_border.svg'
 import logoDark from './assets/images/memoeat_logo_dark.svg'
 
 function App() {
   const [isDark, setIsDark] = useState(false)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
     // 초기 테마 설정 (CSS Variables 적용)
@@ -20,8 +23,46 @@ function App() {
     }
 
     window.addEventListener('darkModeChange', handleDarkModeChange)
+
+    // 로그인 상태 확인
+    const checkAuth = async (showLoading = true) => {
+      if (showLoading) {
+        setIsCheckingAuth(true)
+      }
+      try {
+        const { user, isApproved, error } = await getCurrentUser()
+        if (!error && user && isApproved) {
+          setIsAuthenticated(true)
+        } else {
+          setIsAuthenticated(false)
+        }
+      } catch (error) {
+        console.error('인증 확인 오류:', error)
+        setIsAuthenticated(false)
+      } finally {
+        if (showLoading) {
+          setIsCheckingAuth(false)
+        }
+      }
+    }
+
+    checkAuth(true) // 초기 로딩 시에는 로딩 표시
+
+    // localStorage 변경 감지 (다른 탭에서 로그인/로그아웃 시)
+    const handleStorageChange = (e) => {
+      // Supabase auth 관련 키가 변경되었을 때만 재확인
+      if (e.key && (e.key.includes('sb-') || e.key.includes('supabase'))) {
+        console.log('🔄 Storage changed, rechecking auth:', e.key)
+        checkAuth(false) // 재확인 시에는 로딩 표시하지 않음
+      }
+    }
+
+    // storage 이벤트 리스너 등록 (다른 탭의 변경사항 감지)
+    window.addEventListener('storage', handleStorageChange)
+
     return () => {
       window.removeEventListener('darkModeChange', handleDarkModeChange)
+      window.removeEventListener('storage', handleStorageChange)
     }
   }, [])
 
@@ -49,6 +90,27 @@ function App() {
 
   const handleSignUpClick = () => {
     window.location.href = '/signup'
+  }
+
+  // 인증 확인 중
+  if (isCheckingAuth) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${
+        isDark ? 'bg-[#1e1e1e]' : 'bg-white'
+      }`}>
+        <div className="text-center">
+          <div className={`inline-block animate-spin rounded-full h-12 w-12 border-4 border-t-transparent ${
+            isDark ? 'border-[#569cd6]' : 'border-blue-500'
+          }`}></div>
+          <p className={`mt-4 ${isDark ? 'text-[#cccccc]' : 'text-gray-700'}`}>로딩 중...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // 로그인된 사용자는 dashboard로 리다이렉트
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />
   }
 
   return (

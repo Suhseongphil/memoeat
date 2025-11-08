@@ -1,37 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
-import { getCurrentUser } from '../../services/auth'
+import { useAuthStore } from '../../stores/authStore'
+import { initializeTheme } from '../../config/theme'
 
 function ProtectedRoute({ children }) {
-  const [loading, setLoading] = useState(true)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isApproved, setIsApproved] = useState(false)
+  const { user, isApproved, loading, fetchUser } = useAuthStore()
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { user, isApproved: approved, error } = await getCurrentUser()
+    // 초기 테마 적용 (빠른 적용을 위해)
+    initializeTheme()
 
-        if (error || !user) {
-          setIsAuthenticated(false)
-          setIsApproved(false)
-        } else {
-          setIsAuthenticated(true)
-          setIsApproved(approved)
-        }
-      } catch (error) {
-        console.error('인증 확인 오류:', error)
-        setIsAuthenticated(false)
-        setIsApproved(false)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    checkAuth()
+    // 사용자 정보 로드 (테마 포함)
+    // fetchUser는 Zustand 액션이므로 안정적이며, 초기 마운트 시에만 호출
+    fetchUser()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // 로딩 중
   if (loading) {
+    // 테마를 고려한 로딩 화면 (Tailwind dark 모드 사용)
     return (
       <div className="min-h-screen bg-white dark:bg-[#1e1e1e] flex items-center justify-center">
         <div className="text-center">
@@ -42,10 +29,12 @@ function ProtectedRoute({ children }) {
     )
   }
 
-  if (!isAuthenticated) {
+  // 인증되지 않음
+  if (!user) {
     return <Navigate to="/login" replace />
   }
 
+  // 승인되지 않음
   if (!isApproved) {
     return (
       <div className="min-h-screen bg-white dark:bg-[#1e1e1e] flex items-center justify-center p-4">

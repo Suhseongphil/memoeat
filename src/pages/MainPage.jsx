@@ -1,19 +1,17 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Header from '../components/common/Header'
 import Sidebar from '../components/sidebar/Sidebar'
 import TabBar from '../components/tabs/TabBar'
 import Editor from '../components/editor/Editor'
-import { getCurrentUser } from '../services/auth'
 import { getNotes, createNote, updateNote, deleteNote, reorderNotes, toggleFavorite } from '../services/notes'
 import { getFolders, createFolder, updateFolder, deleteFolder, buildFolderTree, reorderFolders } from '../services/folders'
 import { useAuthStore } from '../stores/authStore'
 
 function MainPage() {
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { user, fetchUser, preferences, loading } = useAuthStore()
+  // ProtectedRoute에서 이미 인증 체크 및 사용자 정보 로드 완료
+  const { user, preferences } = useAuthStore()
 
   const [openedNotes, setOpenedNotes] = useState([]) // 열린 탭들의 ID 배열
   const [activeTabId, setActiveTabId] = useState(null) // 현재 활성 탭 ID
@@ -28,11 +26,6 @@ function MainPage() {
 
   // 다크모드 여부
   const isDark = preferences?.theme === 'dark'
-
-  // 사용자 정보 로드 (ProtectedRoute에서 이미 인증 체크함)
-  useEffect(() => {
-    fetchUser()
-  }, [])
 
   // 폴더 목록 가져오기
   const { data: foldersData = [], isLoading: foldersLoading } = useQuery({
@@ -370,23 +363,7 @@ function MainPage() {
     }
   }
 
-  if (loading || !user) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center ${
-        isDark ? 'bg-[#1e1e1e]' : 'bg-white'
-      }`}>
-        <div className="text-center">
-          <div className={`inline-block animate-spin rounded-full h-12 w-12 border-4 border-t-transparent ${
-            isDark ? 'border-[#569cd6]' : 'border-blue-500'
-          }`}></div>
-          <p className={`mt-4 ${
-            isDark ? 'text-[#cccccc]' : 'text-gray-700'
-          }`}>로딩 중...</p>
-        </div>
-      </div>
-    )
-  }
-
+  // ProtectedRoute에서 이미 인증 및 로딩 완료 상태이므로 여기서는 바로 렌더링
   return (
     <div className={`h-screen flex flex-col ${
       isDark ? 'bg-[#1e1e1e]' : 'bg-white'

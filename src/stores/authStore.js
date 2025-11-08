@@ -46,6 +46,17 @@ export const useAuthStore = create((set, get) => ({
     set({ loading: true, error: null })
 
     try {
+      // 1. 테마를 먼저 적용 (localStorage에서 빠르게 읽어서 깜빡임 방지)
+      // index.html의 스크립트가 이미 적용했지만, 사용자 설정이 있으면 덮어씀
+      // 우선 localStorage의 darkMode 확인 (빠른 초기 적용)
+      const localDarkMode = localStorage.getItem('darkMode') === 'true'
+      if (localDarkMode) {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+
+      // 2. 사용자 정보 가져오기
       const { user, session, isApproved, error } = await getCurrentUser()
 
       if (error) {
@@ -53,21 +64,23 @@ export const useAuthStore = create((set, get) => ({
         return { success: false, error }
       }
 
-      // 사용자 설정 불러오기 (loading 상태를 false로 변경하기 전에)
-      let userPreferences = { theme: 'default', sidebarPosition: 'left' }
+      // 3. 사용자 설정 불러오기 (병렬 처리 가능하지만 순차 처리로 단순화)
+      let userPreferences = { theme: 'light', sidebarPosition: 'left' }
       if (user) {
         const { preferences } = await getUserPreferences(user.id)
         userPreferences = preferences
 
-        // 테마 적용
+        // 4. 사용자 설정의 테마 적용 (localStorage보다 우선)
         if (preferences.theme === 'dark') {
           document.documentElement.classList.add('dark')
+          localStorage.setItem('darkMode', 'true')
         } else {
           document.documentElement.classList.remove('dark')
+          localStorage.setItem('darkMode', 'false')
         }
       }
 
-      // 모든 데이터 로드 완료 후 loading: false
+      // 5. 모든 데이터 로드 완료 후 상태 업데이트
       set({
         user,
         session,
