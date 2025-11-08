@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Header from '../components/common/Header'
 import Sidebar from '../components/sidebar/Sidebar'
@@ -7,6 +7,7 @@ import Editor from '../components/editor/Editor'
 import { getNotes, createNote, updateNote, deleteNote, reorderNotes, toggleFavorite } from '../services/notes'
 import { getFolders, createFolder, updateFolder, deleteFolder, buildFolderTree, reorderFolders } from '../services/folders'
 import { useAuthStore } from '../stores/authStore'
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 
 function MainPage() {
   const queryClient = useQueryClient()
@@ -362,6 +363,27 @@ function MainPage() {
       queryClient.invalidateQueries(['folders'])
     }
   }
+
+  // 키보드 단축키 핸들러
+  const handleNextTab = useCallback(() => {
+    if (openedNotes.length === 0) return
+    const currentIndex = openedNotes.indexOf(activeTabId)
+    const nextIndex = (currentIndex + 1) % openedNotes.length
+    setActiveTabId(openedNotes[nextIndex])
+  }, [openedNotes, activeTabId])
+
+  const handlePrevTab = useCallback(() => {
+    if (openedNotes.length === 0) return
+    const currentIndex = openedNotes.indexOf(activeTabId)
+    const prevIndex = currentIndex <= 0 ? openedNotes.length - 1 : currentIndex - 1
+    setActiveTabId(openedNotes[prevIndex])
+  }, [openedNotes, activeTabId])
+
+  // 키보드 단축키 등록
+  useKeyboardShortcuts({
+    onNextTab: handleNextTab,
+    onPrevTab: handlePrevTab
+  })
 
   // ProtectedRoute에서 이미 인증 및 로딩 완료 상태이므로 여기서는 바로 렌더링
   return (

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 
 /**
@@ -10,6 +10,20 @@ function LinkModal({ isOpen, onClose, onSummarize }) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [linkType, setLinkType] = useState(null)
+
+  // Esc 키로 모달 닫기
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && !isLoading) {
+        handleClose()
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [isOpen, isLoading])
 
   // 링크 타입 감지
   const detectLinkType = (url) => {
@@ -90,20 +104,15 @@ function LinkModal({ isOpen, onClose, onSummarize }) {
     onClose()
   }
 
-  // ESC 키로 닫기
-  const handleKeyDown = (e) => {
-    if (e.key === 'Escape' && !isLoading) {
-      handleClose()
-    }
-  }
-
   if (!isOpen) return null
 
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       onClick={handleClose}
-      onKeyDown={handleKeyDown}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="link-modal-title"
     >
       <div
         className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-6"
@@ -111,7 +120,7 @@ function LinkModal({ isOpen, onClose, onSummarize }) {
       >
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h2 id="link-modal-title" className="text-2xl font-bold text-gray-900 dark:text-white">
             🔗 링크 요약
           </h2>
           {!isLoading && (

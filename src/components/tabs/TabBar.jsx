@@ -15,9 +15,13 @@ function TabBar({ openedNotes, activeTabId, onTabChange, onTabClose }) {
   }
 
   return (
-    <div className="bg-white dark:bg-[#252526] border-b border-gray-200 dark:border-[#3e3e42]">
+    <div
+      className="bg-white dark:bg-[#252526] border-b border-gray-200 dark:border-[#3e3e42]"
+      role="tablist"
+      aria-label="열린 메모 탭"
+    >
       <div className="flex items-center overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-[#3e3e42]">
-        {openedNotes.map((note) => {
+        {openedNotes.map((note, index) => {
           const isActive = note.id === activeTabId
           const title = note.data.title || '제목 없음'
 
@@ -25,6 +29,11 @@ function TabBar({ openedNotes, activeTabId, onTabChange, onTabClose }) {
             <div
               key={note.id}
               onClick={() => handleTabClick(note.id)}
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`tabpanel-${note.id}`}
+              aria-label={`${title} (Tab으로 이동 가능)`}
+              tabIndex={isActive ? 0 : -1}
               className={`
                 flex items-center space-x-6 pl-4 pr-2 py-2.5 border-r border-gray-200 dark:border-[#3e3e42]
                 cursor-pointer transition-colors min-w-0 max-w-xs group
@@ -55,13 +64,15 @@ function TabBar({ openedNotes, activeTabId, onTabChange, onTabClose }) {
                   transition-colors flex-shrink-0
                   ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
                 `}
-                aria-label="탭 닫기"
+                aria-label={`${title} 탭 닫기`}
+                title="탭 닫기"
               >
                 <svg
                   className="w-4 h-4 text-gray-500 dark:text-[#9d9d9d] hover:text-gray-700 dark:hover:text-[#cccccc]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"

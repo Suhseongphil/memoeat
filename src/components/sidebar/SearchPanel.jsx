@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react'
 import { createPortal } from 'react-dom'
 
-function SearchPanel({
+const SearchPanel = forwardRef(({
   notes,
   onNoteSelect,
   onDeleteNote,
@@ -9,12 +9,39 @@ function SearchPanel({
   onToggleFavorite,
   selectedNoteId,
   onClose
-}) {
+}, ref) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [contextMenu, setContextMenu] = useState({ show: false, x: 0, y: 0, noteId: null })
   const [showMenu, setShowMenu] = useState(null) // 메뉴 표시 상태
   const contextMenuRef = useRef(null)
   const menuRef = useRef(null)
+  const searchInputRef = useRef(null)
+
+  // 외부에서 검색창에 포커스할 수 있도록 ref 노출
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      searchInputRef.current?.focus()
+    }
+  }))
+
+  // Esc 키로 검색 패널 닫기
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        // 메뉴가 열려있으면 메뉴만 닫기
+        if (showMenu || contextMenu.show) {
+          setShowMenu(null)
+          setContextMenu({ show: false, x: 0, y: 0, noteId: null })
+        } else if (onClose) {
+          // 메뉴가 없으면 검색 패널 닫기
+          onClose()
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [showMenu, contextMenu.show, onClose])
 
   // HTML 태그 제거 함수
   const stripHtmlTags = (html) => {
@@ -153,11 +180,14 @@ function SearchPanel({
           {/* 검색 입력 */}
           <div className="relative">
             <input
+              ref={searchInputRef}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="메모 검색..."
               className="w-full px-3 py-2 pl-9 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-[#569cd6]"
+              aria-label="메모 검색"
+              role="searchbox"
             />
             <svg
               className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
@@ -402,6 +432,8 @@ function SearchPanel({
       )}
     </>
   )
-}
+})
+
+SearchPanel.displayName = 'SearchPanel'
 
 export default SearchPanel
