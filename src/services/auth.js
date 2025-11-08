@@ -82,7 +82,8 @@ export const signIn = async (email, password, rememberMe = false) => {
   try {
     // 1. 로그인 상태 유지 설정 (로그인 전에 설정)
     // rememberMe가 true면 localStorage (영구), false면 sessionStorage (브라우저 종료 시 삭제)
-    customStorage.setStorageType(rememberMe ? 'local' : 'session')
+    const targetStorage = rememberMe ? 'local' : 'session'
+    customStorage.setStorageType(targetStorage)
 
     // 2. Supabase Auth 로그인
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -92,7 +93,23 @@ export const signIn = async (email, password, rememberMe = false) => {
 
     if (authError) throw authError
 
-    // 3. 승인 여부 확인
+    // 3. 세션을 올바른 storage에 명시적으로 저장
+    // Supabase는 내부적으로 storage key를 사용하므로,
+    // 로그인 직후 세션 데이터를 확실하게 올바른 storage에 저장
+    if (authData.session) {
+      const storageKey = `sb-${import.meta.env.VITE_SUPABASE_URL.split('//')[1].split('.')[0]}-auth-token`
+      const sessionData = JSON.stringify(authData.session)
+
+      if (targetStorage === 'local') {
+        localStorage.setItem(storageKey, sessionData)
+        sessionStorage.removeItem(storageKey) // session에서 제거
+      } else {
+        sessionStorage.setItem(storageKey, sessionData)
+        localStorage.removeItem(storageKey) // local에서 제거
+      }
+    }
+
+    // 4. 승인 여부 확인
     const { data: approvalData, error: approvalError } = await supabase
       .from('user_approvals')
       .select('is_approved, approved_at')
@@ -101,7 +118,7 @@ export const signIn = async (email, password, rememberMe = false) => {
 
     if (approvalError) throw approvalError
 
-    // 4. 승인되지 않은 경우 로그아웃 처리
+    // 5. 승인되지 않은 경우 로그아웃 처리
     if (!approvalData.is_approved) {
       await supabase.auth.signOut()
       throw new Error('관리자 승인 대기 중입니다. 승인 후 다시 로그인해주세요.')
