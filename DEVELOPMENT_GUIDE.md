@@ -129,8 +129,8 @@ CREATE POLICY "Users can manage own notes" ON notes FOR ALL USING (auth.uid() = 
 import { createClient } from '@supabase/supabase-js';
 
 export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY,
+  import.meta.env.SUPABASE_URL,
+  import.meta.env.SUPABASE_ANON_KEY,
   {
     auth: {
       persistSession: true,
@@ -161,7 +161,7 @@ api/
 
 ## 주의사항
 ⚠️ Supabase 테이블은 수동으로 SQL Editor에서 생성 필수
-⚠️ 환경변수 설정 필수 (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_ADMIN_EMAIL)
+⚠️ 환경변수 설정 필수 (SUPABASE_URL, SUPABASE_ANON_KEY, VITE_ADMIN_EMAIL)
 
 ---
 
@@ -710,8 +710,8 @@ Phase 8을 시작해줘.
 
 ### 환경변수
 ```env
-VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
 ANTHROPIC_API_KEY=
 VITE_KAKAO_APP_KEY=
 VITE_ADMIN_EMAIL=
