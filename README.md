@@ -123,8 +123,8 @@ npm run dev
 
 ```env
 # Supabase
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_VITE_SUPABASE_ANON_KEY
 
 # Claude API (Serverless Function에서 사용)
 ANTHROPIC_API_KEY=your_anthropic_api_key

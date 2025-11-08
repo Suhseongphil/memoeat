@@ -13,7 +13,7 @@ class CustomStorageAdapter {
   detectStorageType() {
     try {
       // Supabase auth token 키 패턴 찾기
-      const supabaseUrl = import.meta.env.SUPABASE_URL
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
       if (!supabaseUrl) return 'local' // 기본값
 
       const projectRef = supabaseUrl.split('//')[1]?.split('.')[0]
@@ -155,8 +155,8 @@ class CustomStorageAdapter {
 export const customStorage = new CustomStorageAdapter()
 
 export const supabase = createClient(
-  import.meta.env.SUPABASE_URL,
-  import.meta.env.SUPABASE_ANON_KEY,
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY,
   {
     auth: {
       persistSession: true,
