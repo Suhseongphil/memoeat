@@ -4,9 +4,30 @@ import Header from '../components/common/Header'
 import Sidebar from '../components/sidebar/Sidebar'
 import TabBar from '../components/tabs/TabBar'
 import Editor from '../components/editor/Editor'
-import { getNotes, createNote, updateNote, deleteNote, reorderNotes, toggleFavorite } from '../services/notes'
-import { getFolders, createFolder, updateFolder, deleteFolder, buildFolderTree, reorderFolders } from '../services/folders'
+import {
+  getNotes,
+  createNote,
+  updateNote,
+  deleteNote,
+  reorderNotes,
+  toggleFavorite,
+  restoreNote,
+  permanentlyDeleteNote,
+  emptyNotesTrash
+} from '../services/notes'
+import {
+  getFolders,
+  createFolder,
+  updateFolder,
+  deleteFolder,
+  buildFolderTree,
+  reorderFolders,
+  restoreFolder,
+  permanentlyDeleteFolder,
+  emptyFoldersTrash
+} from '../services/folders'
 import { useAuthStore } from '../stores/authStore'
+import { showUndoToast, showSuccessToast, showErrorToast } from '../lib/toast.jsx'
 
 function MainPage() {
   const queryClient = useQueryClient()
@@ -90,6 +111,40 @@ function MainPage() {
     staleTime: 2 * 60 * 1000, // 메모는 2분간 캐시 유지 (변경 빈도가 높음)
   })
 
+  const { data: trashedNotes = [], isLoading: trashedNotesLoading } = useQuery({
+    queryKey: ['notes', user?.id, 'trash'],
+    queryFn: async () => {
+      if (!user?.id) return []
+
+      const { notes: deletedNotes, error } = await getNotes(user.id, { onlyDeleted: true })
+      if (error) {
+        console.error('휴지통 메모 로딩 오류:', error)
+        return []
+      }
+
+      return deletedNotes
+    },
+    enabled: !!user?.id,
+    staleTime: 60 * 1000
+  })
+
+  const { data: trashedFolders = [], isLoading: trashedFoldersLoading } = useQuery({
+    queryKey: ['folders', user?.id, 'trash'],
+    queryFn: async () => {
+      if (!user?.id) return []
+
+      const { folders: deletedFolders, error } = await getFolders(user.id, { onlyDeleted: true })
+      if (error) {
+        console.error('휴지통 폴더 로딩 오류:', error)
+        return []
+      }
+
+      return deletedFolders
+    },
+    enabled: !!user?.id,
+    staleTime: 2 * 60 * 1000
+  })
+
   // notes가 로드된 후 openedNotes에 존재하지 않는 메모 ID 제거
   useEffect(() => {
     if (notes.length > 0 && openedNotes.length > 0) {
@@ -162,7 +217,7 @@ function MainPage() {
       setActiveTabId(newNote.id)
     },
     onError: (error) => {
-      alert(`메모 생성 실패: ${error.message}`)
+      showErrorToast(`메모 생성 실패: ${error.message}`)
     }
   })
 
@@ -193,33 +248,6 @@ function MainPage() {
     }
   })
 
-  // 메모 삭제
-  const deleteNoteMutation = useMutation({
-    mutationFn: async (noteId) => {
-      const { success, error } = await deleteNote(noteId)
-      if (error) throw new Error(error)
-      return success
-    },
-    onSuccess: (_, deletedNoteId) => {
-      queryClient.invalidateQueries(['notes'])
-      // 삭제된 메모가 열린 탭에 있으면 해당 탭 닫기
-      setOpenedNotes((prev) => {
-        const newOpenedNotes = prev.filter((id) => id !== deletedNoteId)
-        const closedIndex = prev.indexOf(deletedNoteId)
-        setActiveTabId((currentActive) => {
-          if (currentActive !== deletedNoteId) return currentActive
-          if (newOpenedNotes.length === 0) return null
-          const newActiveIndex = Math.max(0, closedIndex - 1)
-          return newOpenedNotes[newActiveIndex]
-        })
-        return newOpenedNotes
-      })
-    },
-    onError: (error) => {
-      alert(`메모 삭제 실패: ${error.message}`)
-    }
-  })
-
   const removeNoteFromTabs = useCallback((noteId) => {
     setOpenedNotes((prev) => {
       const newOpenedNotes = prev.filter((id) => id !== noteId)
@@ -233,6 +261,69 @@ function MainPage() {
       return newOpenedNotes
     })
   }, [])
+
+  const restoreNoteMutation = useMutation({
+    mutationFn: async (noteId) => {
+      const { note, error } = await restoreNote(noteId)
+      if (error) throw new Error(error)
+      return note
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['notes'])
+      if (user?.id) {
+        queryClient.invalidateQueries(['notes', user.id, 'trash'])
+      }
+      showSuccessToast('메모를 복구했습니다.')
+    },
+    onError: (error) => {
+      showErrorToast(`메모 복구 실패: ${error.message}`)
+    }
+  })
+
+  const permanentlyDeleteNoteMutation = useMutation({
+    mutationFn: async (noteId) => {
+      const { success, error } = await permanentlyDeleteNote(noteId)
+      if (!success) throw new Error(error)
+      return noteId
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['notes'])
+      if (user?.id) {
+        queryClient.invalidateQueries(['notes', user.id, 'trash'])
+      }
+      showSuccessToast('메모를 영구 삭제했습니다.')
+    },
+    onError: (error) => {
+      showErrorToast(`메모 영구 삭제 실패: ${error.message}`)
+    }
+  })
+
+  // 메모 삭제 (소프트 삭제)
+  const deleteNoteMutation = useMutation({
+    mutationFn: async (noteId) => {
+      const result = await deleteNote(noteId)
+      if (!result.success) throw new Error(result.error)
+      return result.note
+    },
+    onSuccess: (deletedNote, noteId) => {
+      queryClient.invalidateQueries(['notes'])
+      if (user?.id) {
+        queryClient.invalidateQueries(['notes', user.id, 'trash'])
+      }
+
+      const targetId = deletedNote?.id ?? noteId
+      if (targetId) {
+        removeNoteFromTabs(targetId)
+        showUndoToast({
+          message: '메모가 휴지통으로 이동했어요.',
+          onUndo: () => restoreNoteMutation.mutate(targetId)
+        })
+      }
+    },
+    onError: (error) => {
+      showErrorToast(`메모 삭제 실패: ${error.message}`)
+    }
+  })
 
   // 폴더 생성
   const createFolderMutation = useMutation({
@@ -248,7 +339,7 @@ function MainPage() {
       queryClient.invalidateQueries(['folders'])
     },
     onError: (error) => {
-      alert(`폴더 생성 실패: ${error.message}`)
+      showErrorToast(`폴더 생성 실패: ${error.message}`)
     }
   })
 
@@ -263,26 +354,115 @@ function MainPage() {
       queryClient.invalidateQueries(['folders'])
     },
     onError: (error) => {
-      alert(`폴더 이름 변경 실패: ${error.message}`)
+      showErrorToast(`폴더 이름 변경 실패: ${error.message}`)
+    }
+  })
+
+  const restoreFolderMutation = useMutation({
+    mutationFn: async (folderId) => {
+      const { success, error } = await restoreFolder(folderId)
+      if (!success) throw new Error(error)
+      return folderId
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['folders'])
+      queryClient.invalidateQueries(['notes'])
+      if (user?.id) {
+        queryClient.invalidateQueries(['folders', user.id, 'trash'])
+        queryClient.invalidateQueries(['notes', user.id, 'trash'])
+      }
+      showSuccessToast('폴더를 복구했습니다.')
+    },
+    onError: (error) => {
+      showErrorToast(`폴더 복구 실패: ${error.message}`)
+    }
+  })
+
+  const permanentlyDeleteFolderMutation = useMutation({
+    mutationFn: async (folderId) => {
+      const { success, error } = await permanentlyDeleteFolder(folderId)
+      if (!success) throw new Error(error)
+      return folderId
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['folders'])
+      queryClient.invalidateQueries(['notes'])
+      if (user?.id) {
+        queryClient.invalidateQueries(['folders', user.id, 'trash'])
+        queryClient.invalidateQueries(['notes', user.id, 'trash'])
+      }
+      showSuccessToast('폴더를 영구 삭제했습니다.')
+    },
+    onError: (error) => {
+      showErrorToast(`폴더 영구 삭제 실패: ${error.message}`)
+    }
+  })
+
+  const emptyTrashMutation = useMutation({
+    mutationFn: async () => {
+      if (!user?.id) throw new Error('사용자 정보가 없습니다.')
+
+      const folderResult = await emptyFoldersTrash(user.id)
+      if (!folderResult.success) throw new Error(folderResult.error)
+
+      const noteResult = await emptyNotesTrash(user.id)
+      if (!noteResult.success) throw new Error(noteResult.error)
+
+      return true
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['folders'])
+      queryClient.invalidateQueries(['notes'])
+      if (user?.id) {
+        queryClient.invalidateQueries(['folders', user.id, 'trash'])
+        queryClient.invalidateQueries(['notes', user.id, 'trash'])
+      }
+      showSuccessToast('휴지통을 비웠습니다.')
+    },
+    onError: (error) => {
+      showErrorToast(`휴지통 비우기 실패: ${error.message}`)
     }
   })
 
   // 폴더 삭제
   const deleteFolderMutation = useMutation({
     mutationFn: async (folderId) => {
-      const { success, error} = await deleteFolder(folderId)
-      if (error) throw new Error(error)
-      return success
+      const result = await deleteFolder(folderId)
+      if (!result.success) throw new Error(result.error)
+      return result
     },
-    onSuccess: (_, deletedFolderId) => {
+    onSuccess: (result, deletedFolderId) => {
       queryClient.invalidateQueries(['folders'])
+      queryClient.invalidateQueries(['notes'])
+      if (user?.id) {
+        queryClient.invalidateQueries(['folders', user.id, 'trash'])
+        queryClient.invalidateQueries(['notes', user.id, 'trash'])
+      }
+
+      if (Array.isArray(result?.affectedNotes)) {
+        result.affectedNotes.forEach((noteId) => {
+          removeNoteFromTabs(noteId)
+        })
+      }
+
       // 삭제된 폴더가 선택되어 있었다면 선택 해제
       if (selectedFolderId === deletedFolderId) {
         setSelectedFolderId(null)
       }
+
+      const folderCount = (result?.affectedFolders?.length || 1) - 1
+      const noteCount = result?.affectedNotes?.length || 0
+      const hasDescendants = folderCount > 0 || noteCount > 0
+
+      showUndoToast({
+        message: hasDescendants
+          ? `폴더와 하위 항목이 휴지통으로 이동했어요. (폴더 ${Math.max(folderCount, 0)}개, 메모 ${noteCount}개)`
+          : '폴더가 휴지통으로 이동했어요.',
+        onUndo: () => restoreFolderMutation.mutate(deletedFolderId)
+      })
     },
     onError: (error) => {
-      alert(`폴더 삭제 실패: ${error.message}`)
+      showErrorToast(`폴더 삭제 실패: ${error.message}`)
     }
   })
 
@@ -306,6 +486,26 @@ function MainPage() {
   const handleDeleteFolder = useCallback((folderId) => {
     deleteFolderMutation.mutate(folderId)
   }, [deleteFolderMutation])
+
+  const handleRestoreNoteFromTrash = useCallback((noteId) => {
+    restoreNoteMutation.mutate(noteId)
+  }, [restoreNoteMutation])
+
+  const handleRestoreFolderFromTrash = useCallback((folderId) => {
+    restoreFolderMutation.mutate(folderId)
+  }, [restoreFolderMutation])
+
+  const handlePermanentDeleteNote = useCallback((noteId) => {
+    permanentlyDeleteNoteMutation.mutate(noteId)
+  }, [permanentlyDeleteNoteMutation])
+
+  const handlePermanentDeleteFolder = useCallback((folderId) => {
+    permanentlyDeleteFolderMutation.mutate(folderId)
+  }, [permanentlyDeleteFolderMutation])
+
+  const handleEmptyTrash = useCallback(() => {
+    emptyTrashMutation.mutate()
+  }, [emptyTrashMutation])
 
   const handleNoteSelect = (noteId) => {
     // 이미 열려있는 탭이면 해당 탭으로 전환
@@ -362,10 +562,10 @@ function MainPage() {
     const { note, error } = await updateNote(noteId, { title: newTitle })
     if (error) {
       if (error === 'NOTE_NOT_FOUND') {
-        alert('해당 메모를 찾을 수 없습니다. 이미 삭제되었을 수 있습니다.')
+        showErrorToast('해당 메모를 찾을 수 없습니다. 이미 삭제되었을 수 있습니다.')
         removeNoteFromTabs(noteId)
       } else {
-        alert(`제목 변경 실패: ${error}`)
+        showErrorToast(`제목 변경 실패: ${error}`)
       }
     } else {
       // 캐시를 직접 업데이트하여 즉시 반영
@@ -383,10 +583,10 @@ function MainPage() {
     const { note, error } = await toggleFavorite(noteId)
     if (error) {
       if (error === 'NOTE_NOT_FOUND') {
-        alert('해당 메모를 찾을 수 없습니다. 이미 삭제되었을 수 있습니다.')
+        showErrorToast('해당 메모를 찾을 수 없습니다. 이미 삭제되었을 수 있습니다.')
         removeNoteFromTabs(noteId)
       } else {
-        alert(`즐겨찾기 변경 실패: ${error}`)
+        showErrorToast(`즐겨찾기 변경 실패: ${error}`)
       }
     } else {
       // 캐시를 직접 업데이트하여 즉시 반영
@@ -423,10 +623,10 @@ function MainPage() {
     const { note, error } = await updateNote(noteId, { folder_id: targetFolderId })
     if (error) {
       if (error === 'NOTE_NOT_FOUND') {
-        alert('해당 메모를 찾을 수 없습니다. 이미 삭제되었을 수 있습니다.')
+        showErrorToast('해당 메모를 찾을 수 없습니다. 이미 삭제되었을 수 있습니다.')
         removeNoteFromTabs(noteId)
       } else {
-        alert(`메모 이동 실패: ${error}`)
+        showErrorToast(`메모 이동 실패: ${error}`)
       }
     } else {
       // 캐시를 직접 업데이트하여 탭 순서를 유지
@@ -447,13 +647,13 @@ function MainPage() {
     // 순환 참조 방지
     const { isCircularReference } = await import('../services/folders')
     if (isCircularReference(folderId, targetParentId, foldersData)) {
-      alert('폴더를 자기 자신이나 하위 폴더로 이동할 수 없습니다.')
+      showErrorToast('폴더를 자기 자신이나 하위 폴더로 이동할 수 없습니다.')
       return
     }
 
     const { folder, error } = await updateFolder(folderId, { parent_id: targetParentId })
     if (error) {
-      alert(`폴더 이동 실패: ${error}`)
+      showErrorToast(`폴더 이동 실패: ${error}`)
     } else {
       queryClient.invalidateQueries(['folders'])
     }
@@ -478,6 +678,14 @@ function MainPage() {
       queryClient.invalidateQueries(['folders'])
     }
   }
+
+  const isTrashLoading = trashedNotesLoading || trashedFoldersLoading
+  const isTrashProcessing =
+    restoreNoteMutation.isPending ||
+    restoreFolderMutation.isPending ||
+    permanentlyDeleteNoteMutation.isPending ||
+    permanentlyDeleteFolderMutation.isPending ||
+    emptyTrashMutation.isPending
 
   // ProtectedRoute에서 이미 인증 및 로딩 완료 상태이므로 여기서는 바로 렌더링
   return (
@@ -512,6 +720,15 @@ function MainPage() {
           onClose={handleSidebarClose}
           userName={userName}
           sidebarPosition={sidebarPosition}
+          trashedNotes={trashedNotes}
+          trashedFolders={trashedFolders}
+          onRestoreTrashedNote={handleRestoreNoteFromTrash}
+          onRestoreTrashedFolder={handleRestoreFolderFromTrash}
+          onDeleteTrashedNote={handlePermanentDeleteNote}
+          onDeleteTrashedFolder={handlePermanentDeleteFolder}
+          onEmptyTrash={handleEmptyTrash}
+          isTrashLoading={isTrashLoading}
+          isTrashProcessing={isTrashProcessing}
         />
 
         {/* 탭바 + 에디터 영역 */}

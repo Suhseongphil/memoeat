@@ -300,9 +300,7 @@ const FolderItem = memo(function FolderItem({
 
   // 폴더 삭제
   const handleDelete = () => {
-    if (confirm(`"${folder.data.name}" 폴더를 삭제하시겠습니까?\n\n⚠️ 폴더 내의 모든 메모도 함께 삭제됩니다.`)) {
-      onDeleteFolder(folder.id)
-    }
+    onDeleteFolder(folder.id)
     setShowMenu(false)
   }
 
