@@ -5,6 +5,7 @@ import { applyTheme, initializeTheme } from '../config/theme'
 import DarkModeToggle from '../components/common/DarkModeToggle'
 import logoLight from '../assets/images/memoeat_logo_amber_bg_white_text.svg'
 import logoDark from '../assets/images/memoeat_logo_dark.svg'
+import { showSuccessToast } from '../lib/toast.jsx'
 
 function SignUpPage() {
   const navigate = useNavigate()
@@ -74,11 +75,11 @@ function SignUpPage() {
 
       if (isAdmin) {
         // 관리자는 자동 승인되어 바로 로그인 페이지로 이동
-        alert('회원가입이 완료되었습니다. 로그인해주세요.')
+        showSuccessToast('회원가입이 완료되었습니다. 로그인해주세요.')
         navigate('/login')
       } else if (needsApproval) {
         // 일반 사용자는 승인 대기 메시지 표시
-        alert('회원가입이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.')
+        showSuccessToast('회원가입이 완료되었습니다. 관리자 승인 후 로그인이 가능합니다.')
         navigate('/login')
       }
     } catch (err) {

@@ -19,6 +19,7 @@ import LinkModal from './LinkModal'
 import { FontSize } from './extensions/FontSize'
 import { LineHeight } from './extensions/LineHeight'
 import './tiptap.css'
+import { showErrorToast } from '../../lib/toast.jsx'
 
 function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
   const [title, setTitle] = useState('')
@@ -188,7 +189,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
         setSaveStatus('error')
 
         // 오류 알림
-        alert('메모 저장에 실패했습니다. 네트워크 연결을 확인해주세요.')
+        showErrorToast('메모 저장에 실패했습니다. 네트워크 연결을 확인해주세요.')
       }
     }, 3000),
     [onSave]
@@ -315,13 +316,11 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
   // 메모 삭제
   const handleDelete = () => {
     if (!note) return
-    if (confirm('이 메모를 삭제하시겠습니까?')) {
-      // 삭제 전에 대기 중인 저장 완료
-      if (debouncedSaveRef.current?.flush) {
-        debouncedSaveRef.current.flush()
-      }
-      onDeleteNote(note.id)
+    // 삭제 전에 대기 중인 저장 완료
+    if (debouncedSaveRef.current?.flush) {
+      debouncedSaveRef.current.flush()
     }
+    onDeleteNote(note.id)
   }
 
   // HTML을 일반 텍스트로 변환
@@ -395,7 +394,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
       }, 2000)
     } catch (error) {
       console.error('복사 중 오류 발생:', error)
-      alert('복사에 실패했습니다. 다시 시도해주세요.')
+      showErrorToast('복사에 실패했습니다. 다시 시도해주세요.')
     }
   }
 
@@ -442,7 +441,7 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
       URL.revokeObjectURL(url)
     } catch (error) {
       console.error('다운로드 중 오류 발생:', error)
-      alert('다운로드에 실패했습니다. 다시 시도해주세요.')
+      showErrorToast('다운로드에 실패했습니다. 다시 시도해주세요.')
     }
   }
 

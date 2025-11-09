@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuthStore } from '../../stores/authStore'
 import { THEME_LIST } from '../../config/themes'
+import { showErrorToast, showSuccessToast } from '../../lib/toast.jsx'
 
 function ThemeModal({ isOpen, onClose }) {
   const { preferences, updatePreferences } = useAuthStore()
@@ -12,12 +13,14 @@ function ThemeModal({ isOpen, onClose }) {
     setIsLoading(true)
     try {
       await updatePreferences({ theme: themeId })
+      const selectedTheme = THEME_LIST.find(theme => theme.id === themeId)
+      showSuccessToast(`${selectedTheme?.name || '테마'}로 변경되었어요.`)
       // 테마 변경 후 약간의 지연을 주고 모달 닫기
       setTimeout(() => {
         onClose()
       }, 300)
     } catch (error) {
-      alert(`테마 변경 실패: ${error.message}`)
+      showErrorToast(`테마 변경 실패: ${error.message}`)
     } finally {
       setIsLoading(false)
     }

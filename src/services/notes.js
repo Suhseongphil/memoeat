@@ -16,6 +16,7 @@ export const createNote = async (userId, noteData = {}) => {
       .from('notes')
       .select('data')
       .eq('user_id', userId)
+      .is('deleted_at', null)
 
     if (folderId === null) {
       query = query.is('data->folder_id', null)
@@ -24,6 +25,7 @@ export const createNote = async (userId, noteData = {}) => {
     }
 
     const { data: existingNotes, error: queryError } = await query
+    if (queryError) throw queryError
 
     const maxOrder = existingNotes && existingNotes.length > 0
       ? Math.max(...existingNotes.map(n => n.data?.order || 0))
@@ -66,7 +68,7 @@ export const getNotes = async (userId, filters = {}) => {
   try {
     let query = supabase
       .from('notes')
-      .select('id, data, created_at, updated_at')
+      .select('id, data, created_at, updated_at, deleted_at')
       .eq('user_id', userId)
 
     // 폴더 필터
@@ -90,6 +92,12 @@ export const getNotes = async (userId, filters = {}) => {
       )
     }
 
+    if (filters.onlyDeleted) {
+      query = query.not('deleted_at', 'is', null)
+    } else if (!filters.includeDeleted) {
+      query = query.is('deleted_at', null)
+    }
+
     // 정렬 (order 순서대로, order가 같으면 최근 수정 순)
     query = query.order('data->order', { ascending: true })
     query = query.order('updated_at', { ascending: false })
@@ -110,13 +118,20 @@ export const getNotes = async (userId, filters = {}) => {
  * @param {string} noteId - 메모 ID
  * @returns {Promise<{note, error}>}
  */
-export const getNote = async (noteId) => {
+export const getNote = async (noteId, options = {}) => {
   try {
-    const { data: note, error } = await supabase
+    const { includeDeleted = false } = options
+
+    let query = supabase
       .from('notes')
-      .select('id, data, created_at, updated_at')
+      .select('id, data, created_at, updated_at, deleted_at')
       .eq('id', noteId)
-      .maybeSingle()
+
+    if (!includeDeleted) {
+      query = query.is('deleted_at', null)
+    }
+
+    const { data: note, error } = await query.maybeSingle()
 
     if (error) throw error
     if (!note) {
@@ -189,6 +204,84 @@ export const updateNote = async (noteId, updates) => {
  */
 export const deleteNote = async (noteId) => {
   try {
+    const { note: existingNote, error: fetchError } = await getNote(noteId, { includeDeleted: true })
+    if (fetchError === 'NOTE_NOT_FOUND') {
+      return { success: false, error: 'NOTE_NOT_FOUND' }
+    }
+    if (fetchError) throw new Error(fetchError)
+
+    if (existingNote.deleted_at) {
+      return { success: true, note: existingNote, alreadyDeleted: true }
+    }
+
+    const now = new Date().toISOString()
+    const updatedData = {
+      ...existingNote.data,
+      deleted_at: now,
+      updated_at: now
+    }
+
+    const { data: note, error } = await supabase
+      .from('notes')
+      .update({
+        data: updatedData,
+        deleted_at: now,
+        updated_at: now
+      })
+      .eq('id', noteId)
+      .select('id, data, created_at, updated_at, deleted_at, user_id')
+      .maybeSingle()
+
+    if (error) throw error
+
+    return { success: true, note, error: null }
+  } catch (error) {
+    console.error('DeleteNote error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export const restoreNote = async (noteId) => {
+  try {
+    const { note: existingNote, error: fetchError } = await getNote(noteId, { includeDeleted: true })
+    if (fetchError === 'NOTE_NOT_FOUND') {
+      return { note: null, error: 'NOTE_NOT_FOUND' }
+    }
+    if (fetchError) throw new Error(fetchError)
+
+    if (!existingNote.deleted_at) {
+      return { note: existingNote, error: null }
+    }
+
+    const now = new Date().toISOString()
+    const updatedData = {
+      ...existingNote.data,
+      deleted_at: null,
+      updated_at: now
+    }
+
+    const { data: note, error } = await supabase
+      .from('notes')
+      .update({
+        data: updatedData,
+        deleted_at: null,
+        updated_at: now
+      })
+      .eq('id', noteId)
+      .select('id, data, created_at, updated_at, deleted_at, user_id')
+      .maybeSingle()
+
+    if (error) throw error
+
+    return { note, error: null }
+  } catch (error) {
+    console.error('RestoreNote error:', error)
+    return { note: null, error: error.message }
+  }
+}
+
+export const permanentlyDeleteNote = async (noteId) => {
+  try {
     const { error } = await supabase
       .from('notes')
       .delete()
@@ -198,7 +291,24 @@ export const deleteNote = async (noteId) => {
 
     return { success: true, error: null }
   } catch (error) {
-    console.error('DeleteNote error:', error)
+    console.error('PermanentlyDeleteNote error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export const emptyNotesTrash = async (userId) => {
+  try {
+    const { error } = await supabase
+      .from('notes')
+      .delete()
+      .eq('user_id', userId)
+      .not('deleted_at', 'is', null)
+
+    if (error) throw error
+
+    return { success: true, error: null }
+  } catch (error) {
+    console.error('EmptyNotesTrash error:', error)
     return { success: false, error: error.message }
   }
 }

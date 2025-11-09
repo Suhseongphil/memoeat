@@ -39,13 +39,24 @@ export const createFolder = async (userId, folderData = {}) => {
 /**
  * 사용자의 모든 폴더 가져오기
  */
-export const getFolders = async (userId) => {
+export const getFolders = async (userId, options = {}) => {
   try {
-    const { data: folders, error } = await supabase
+    const { includeDeleted = false, onlyDeleted = false } = options
+
+    let query = supabase
       .from('folders')
-      .select('id, data, created_at')
+      .select('id, data, created_at, deleted_at, user_id')
       .eq('user_id', userId)
-      .order('data->order', { ascending: true })
+
+    if (onlyDeleted) {
+      query = query.not('deleted_at', 'is', null)
+    } else if (!includeDeleted) {
+      query = query.is('deleted_at', null)
+    }
+
+    query = query.order('data->order', { ascending: true })
+
+    const { data: folders, error } = await query
 
     if (error) {
       console.error('폴더 조회 오류:', error)
@@ -67,13 +78,16 @@ export const updateFolder = async (folderId, updates) => {
     // 기존 폴더 데이터 가져오기
     const { data: existingFolder, error: fetchError } = await supabase
       .from('folders')
-      .select('id, data, created_at')
+      .select('id, data, created_at, deleted_at')
       .eq('id', folderId)
-      .single()
+      .maybeSingle()
 
     if (fetchError) {
       console.error('폴더 조회 오류:', fetchError)
       return { folder: null, error: fetchError.message }
+    }
+    if (!existingFolder || existingFolder.deleted_at) {
+      return { folder: null, error: 'FOLDER_NOT_FOUND' }
     }
 
     // 데이터 병합
@@ -87,8 +101,8 @@ export const updateFolder = async (folderId, updates) => {
       .from('folders')
       .update({ data: updatedData })
       .eq('id', folderId)
-      .select('id, data, created_at')
-      .single()
+      .select('id, data, created_at, deleted_at')
+      .maybeSingle()
 
     if (error) {
       console.error('폴더 업데이트 오류:', error)
@@ -103,71 +117,245 @@ export const updateFolder = async (folderId, updates) => {
 }
 
 /**
- * 폴더 삭제 (하위 메모와 하위 폴더도 함께 삭제)
+ * 폴더 삭제 (소프트 삭제, 하위 메모와 폴더 포함)
  */
 export const deleteFolder = async (folderId) => {
   try {
-    // 1. 먼저 해당 폴더에 속한 모든 메모 조회 후 삭제
-    const { data: notesToDelete, error: fetchNotesError } = await supabase
-      .from('notes')
-      .select('id, data')
-      .eq('data->>folder_id', folderId)
+    const now = new Date().toISOString()
+    const affectedFolders = new Set()
+    const affectedNotes = new Set()
 
-    if (fetchNotesError) {
-      console.error('메모 조회 오류:', fetchNotesError)
-      return { success: false, error: fetchNotesError.message }
-    }
+    const softDeleteRecursive = async (targetFolderId) => {
+      const { data: folder, error: folderError } = await supabase
+        .from('folders')
+        .select('id, data, deleted_at')
+        .eq('id', targetFolderId)
+        .maybeSingle()
 
-    // 메모 삭제
-    if (notesToDelete && notesToDelete.length > 0) {
-      const noteIds = notesToDelete.map(note => note.id)
-      const { error: deleteNotesError } = await supabase
+      if (folderError) throw folderError
+      if (!folder) throw new Error('FOLDER_NOT_FOUND')
+
+      if (!folder.deleted_at) {
+        const updatedFolderData = {
+          ...folder.data,
+          deleted_at: now,
+          updated_at: now
+        }
+        const { error: updateFolderError } = await supabase
+          .from('folders')
+          .update({
+            data: updatedFolderData,
+            deleted_at: now
+          })
+          .eq('id', targetFolderId)
+
+        if (updateFolderError) throw updateFolderError
+      }
+      affectedFolders.add(targetFolderId)
+
+      const { data: notes, error: notesError } = await supabase
         .from('notes')
-        .delete()
-        .in('id', noteIds)
+        .select('id, data, deleted_at')
+        .eq('data->>folder_id', targetFolderId)
 
-      if (deleteNotesError) {
-        console.error('메모 삭제 오류:', deleteNotesError)
-        return { success: false, error: deleteNotesError.message }
+      if (notesError) throw notesError
+
+      for (const note of notes || []) {
+        if (!note.deleted_at) {
+          const updatedNoteData = {
+            ...note.data,
+            deleted_at: now,
+            updated_at: now
+          }
+          const { error: updateNoteError } = await supabase
+            .from('notes')
+            .update({
+              data: updatedNoteData,
+              deleted_at: now,
+              updated_at: now
+            })
+            .eq('id', note.id)
+
+          if (updateNoteError) throw updateNoteError
+        }
+        affectedNotes.add(note.id)
+      }
+
+      const { data: childFolders, error: childError } = await supabase
+        .from('folders')
+        .select('id')
+        .eq('data->>parent_id', targetFolderId)
+
+      if (childError) throw childError
+
+      for (const child of childFolders || []) {
+        await softDeleteRecursive(child.id)
       }
     }
 
-    // 2. 하위 폴더들도 재귀적으로 삭제
-    const { data: childFolders, error: fetchFoldersError } = await supabase
-      .from('folders')
-      .select('id, data')
-      .eq('data->>parent_id', folderId)
+    await softDeleteRecursive(folderId)
 
-    if (fetchFoldersError) {
-      console.error('하위 폴더 조회 오류:', fetchFoldersError)
-      return { success: false, error: fetchFoldersError.message }
+    return {
+      success: true,
+      error: null,
+      affectedFolders: Array.from(affectedFolders),
+      affectedNotes: Array.from(affectedNotes)
     }
+  } catch (error) {
+    if (error.message === 'FOLDER_NOT_FOUND') {
+      return { success: false, error: 'FOLDER_NOT_FOUND' }
+    }
+    console.error('폴더 삭제 예외:', error)
+    return { success: false, error: error.message }
+  }
+}
 
-    // 하위 폴더들 재귀적으로 삭제
-    if (childFolders && childFolders.length > 0) {
-      for (const childFolder of childFolders) {
-        const { success, error } = await deleteFolder(childFolder.id)
-        if (!success) {
-          console.error('하위 폴더 삭제 실패:', error)
-          return { success: false, error }
+export const restoreFolder = async (folderId) => {
+  try {
+    const now = new Date().toISOString()
+    const restoredFolders = new Set()
+    const restoredNotes = new Set()
+
+    const restoreRecursive = async (targetFolderId) => {
+      const { data: folder, error: folderError } = await supabase
+        .from('folders')
+        .select('id, data, deleted_at')
+        .eq('id', targetFolderId)
+        .maybeSingle()
+
+      if (folderError) throw folderError
+      if (!folder) throw new Error('FOLDER_NOT_FOUND')
+
+      if (folder.deleted_at) {
+        const updatedFolderData = {
+          ...folder.data,
+          deleted_at: null,
+          updated_at: now
+        }
+        const { error: updateFolderError } = await supabase
+          .from('folders')
+          .update({
+            data: updatedFolderData,
+            deleted_at: null
+          })
+          .eq('id', targetFolderId)
+
+        if (updateFolderError) throw updateFolderError
+      }
+      restoredFolders.add(targetFolderId)
+
+      const { data: notes, error: notesError } = await supabase
+        .from('notes')
+        .select('id, data, deleted_at')
+        .eq('data->>folder_id', targetFolderId)
+
+      if (notesError) throw notesError
+
+      for (const note of notes || []) {
+        if (note.deleted_at) {
+          const updatedNoteData = {
+            ...note.data,
+            deleted_at: null,
+            updated_at: now
+          }
+          const { error: updateNoteError } = await supabase
+            .from('notes')
+            .update({
+              data: updatedNoteData,
+              deleted_at: null,
+              updated_at: now
+            })
+            .eq('id', note.id)
+
+          if (updateNoteError) throw updateNoteError
+        }
+        restoredNotes.add(note.id)
+      }
+
+      const { data: childFolders, error: childError } = await supabase
+        .from('folders')
+        .select('id, deleted_at')
+        .eq('data->>parent_id', targetFolderId)
+
+      if (childError) throw childError
+
+      for (const child of childFolders || []) {
+        if (child.deleted_at) {
+          await restoreRecursive(child.id)
         }
       }
     }
 
-    // 3. 마지막으로 폴더 자체 삭제
-    const { error: folderError } = await supabase
+    await restoreRecursive(folderId)
+
+    return {
+      success: true,
+      error: null,
+      restoredFolders: Array.from(restoredFolders),
+      restoredNotes: Array.from(restoredNotes)
+    }
+  } catch (error) {
+    if (error.message === 'FOLDER_NOT_FOUND') {
+      return { success: false, error: 'FOLDER_NOT_FOUND' }
+    }
+    console.error('폴더 복구 예외:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export const permanentlyDeleteFolder = async (folderId) => {
+  try {
+    const { data: childFolders, error: childError } = await supabase
+      .from('folders')
+      .select('id')
+      .eq('data->>parent_id', folderId)
+
+    if (childError) throw childError
+
+    for (const child of childFolders || []) {
+      const { error } = await permanentlyDeleteFolder(child.id)
+      if (error) throw new Error(error)
+    }
+
+    const { error: deleteNotesError } = await supabase
+      .from('notes')
+      .delete()
+      .eq('data->>folder_id', folderId)
+
+    if (deleteNotesError) throw deleteNotesError
+
+    const { error: deleteFolderError } = await supabase
       .from('folders')
       .delete()
       .eq('id', folderId)
 
-    if (folderError) {
-      console.error('폴더 삭제 오류:', folderError)
-      return { success: false, error: folderError.message }
+    if (deleteFolderError) throw deleteFolderError
+
+    return { success: true, error: null }
+  } catch (error) {
+    console.error('폴더 영구 삭제 예외:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export const emptyFoldersTrash = async (userId) => {
+  try {
+    const { data: trashedFolders, error } = await supabase
+      .from('folders')
+      .select('id')
+      .eq('user_id', userId)
+      .not('deleted_at', 'is', null)
+
+    if (error) throw error
+
+    for (const folder of trashedFolders || []) {
+      const { error: deleteError } = await permanentlyDeleteFolder(folder.id)
+      if (deleteError) throw new Error(deleteError)
     }
 
     return { success: true, error: null }
   } catch (error) {
-    console.error('폴더 삭제 예외:', error)
+    console.error('폴더 휴지통 비우기 오류:', error)
     return { success: false, error: error.message }
   }
 }

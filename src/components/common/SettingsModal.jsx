@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuthStore } from '../../stores/authStore'
 import ThemeModal from './ThemeModal'
 import { getThemeById } from '../../config/themes'
+import { showErrorToast, showSuccessToast } from '../../lib/toast.jsx'
 
 function SettingsModal({ isOpen, onClose }) {
   const { preferences, updatePreferences } = useAuthStore()
@@ -17,8 +18,9 @@ function SettingsModal({ isOpen, onClose }) {
     try {
       const newPosition = preferences.sidebarPosition === 'left' ? 'right' : 'left'
       await updatePreferences({ sidebarPosition: newPosition })
+      showSuccessToast(`사이드바가 ${newPosition === 'right' ? '오른쪽' : '왼쪽'}으로 이동했어요.`)
     } catch (error) {
-      alert(`사이드바 위치 변경 실패: ${error.message}`)
+      showErrorToast(`사이드바 위치 변경 실패: ${error.message}`)
     } finally {
       setIsLoading(false)
     }

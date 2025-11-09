@@ -10,6 +10,7 @@ import MainPage from './pages/MainPage.jsx'
 import AdminPage from './pages/AdminPage.jsx'
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
 import ErrorBoundary from './components/common/ErrorBoundary.jsx'
+import { Toaster } from 'react-hot-toast'
 
 // React Query 클라이언트 생성
 const queryClient = new QueryClient({
@@ -55,6 +56,16 @@ createRoot(document.getElementById('root')).render(
             />
           </Routes>
         </BrowserRouter>
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              borderRadius: '12px',
+              padding: '12px 16px'
+            }
+          }}
+        />
       </QueryClientProvider>
     </ErrorBoundary>
   </StrictMode>,

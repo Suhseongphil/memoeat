@@ -123,9 +123,7 @@ const SearchPanel = forwardRef(({
 
   // 삭제
   const handleDelete = (noteId) => {
-    if (window.confirm('정말 이 메모를 삭제하시겠습니까?')) {
-      onDeleteNote(noteId)
-    }
+  onDeleteNote(noteId)
     setShowMenu(null)
     setContextMenu({ show: false, x: 0, y: 0, noteId: null })
   }

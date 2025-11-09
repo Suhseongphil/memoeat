@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCurrentUser, signOut } from '../services/auth'
 import DarkModeToggle from '../components/common/DarkModeToggle'
+import { showErrorToast, showSuccessToast } from '../lib/toast.jsx'
 
 function DashboardPage() {
   const navigate = useNavigate()
@@ -16,7 +17,7 @@ function DashboardPage() {
     const { user: currentUser, isApproved, error } = await getCurrentUser()
 
     if (error || !currentUser || !isApproved) {
-      alert('로그인이 필요합니다.')
+      showErrorToast('로그인이 필요합니다.')
       navigate('/login')
       return
     }
@@ -28,10 +29,10 @@ function DashboardPage() {
   const handleSignOut = async () => {
     const { error } = await signOut()
     if (error) {
-      alert('로그아웃 중 오류가 발생했습니다.')
+      showErrorToast('로그아웃 중 오류가 발생했습니다.')
       return
     }
-    alert('로그아웃 되었습니다.')
+    showSuccessToast('로그아웃 되었습니다.')
     navigate('/')
   }
 

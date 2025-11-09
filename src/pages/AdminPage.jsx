@@ -5,6 +5,7 @@ import { getPendingApprovals, getApprovedUsers, approveUser, rejectUser, signOut
 import DarkModeToggle from '../components/common/DarkModeToggle'
 import logoLight from '../assets/images/memoeat_logo_dark.svg'
 import logoDark from '../assets/images/memoeat_logo_amber_bg_white_text.svg'
+import { showErrorToast, showSuccessToast } from '../lib/toast.jsx'
 
 function AdminPage() {
   const navigate = useNavigate()
@@ -17,7 +18,7 @@ function AdminPage() {
 
   useEffect(() => {
     if (!adminLoading && !isAdmin) {
-      alert('관리자만 접근 가능합니다.')
+      showErrorToast('관리자만 접근 가능합니다.')
       navigate('/dashboard')
     }
   }, [isAdmin, adminLoading, navigate])
@@ -56,10 +57,10 @@ function AdminPage() {
     const { success, error } = await approveUser(userId)
 
     if (success) {
-      alert('사용자가 승인되었습니다.')
+      showSuccessToast('사용자가 승인되었습니다.')
       loadUsers() // 목록 새로고침
     } else {
-      alert(`승인 실패: ${error}`)
+      showErrorToast(`승인 실패: ${error}`)
     }
   }
 
@@ -69,10 +70,10 @@ function AdminPage() {
     const { success, error } = await rejectUser(userId)
 
     if (success) {
-      alert('사용자가 거절되었습니다.')
+      showSuccessToast('사용자가 거절되었습니다.')
       loadUsers() // 목록 새로고침
     } else {
-      alert(`거절 실패: ${error}`)
+      showErrorToast(`거절 실패: ${error}`)
     }
   }
 

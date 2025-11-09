@@ -4,6 +4,7 @@ import { signOut } from '../../services/auth'
 import { useAuthStore } from '../../stores/authStore'
 import logoLight from '../../assets/images/memoeat_logo_amber_bg_white_text.svg'
 import logoDark from '../../assets/images/memoeat_logo_dark.svg'
+import { showErrorToast, showSuccessToast } from '../../lib/toast.jsx'
 
 function Header({ onMenuToggle, showMenuButton = true, isSidebarOpen = true }) {
   const navigate = useNavigate()
@@ -42,8 +43,9 @@ function Header({ onMenuToggle, showMenuButton = true, isSidebarOpen = true }) {
     try {
       const newTheme = preferences?.theme === 'dark' ? 'light' : 'dark'
       await updatePreferences({ theme: newTheme })
+      showSuccessToast(`테마가 ${newTheme === 'dark' ? '다크 모드' : '라이트 모드'}로 변경되었습니다.`)
     } catch (error) {
-      alert(`테마 변경 실패: ${error.message}`)
+      showErrorToast(`테마 변경 실패: ${error.message}`)
     }
   }
 
@@ -51,8 +53,9 @@ function Header({ onMenuToggle, showMenuButton = true, isSidebarOpen = true }) {
     try {
       const newPosition = preferences?.sidebarPosition === 'right' ? 'left' : 'right'
       await updatePreferences({ sidebarPosition: newPosition })
+      showSuccessToast(`사이드바가 ${newPosition === 'right' ? '오른쪽' : '왼쪽'}으로 이동했어요.`)
     } catch (error) {
-      alert(`사이드바 위치 변경 실패: ${error.message}`)
+      showErrorToast(`사이드바 위치 변경 실패: ${error.message}`)
     }
   }
 

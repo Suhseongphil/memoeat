@@ -119,9 +119,7 @@ export const NoteItemSimple = memo(function NoteItemSimple({ note, selectedNoteI
 
   // 메모 삭제
   const handleDelete = () => {
-    if (confirm('이 메모를 삭제하시겠습니까?')) {
-      onDeleteNote(note.id)
-    }
+    onDeleteNote(note.id)
     setShowMenu(false)
   }
 
@@ -443,9 +441,7 @@ function NoteItem({ note, selectedNoteId, onNoteSelect, onDeleteNote }) {
 
   const handleDelete = (e) => {
     e.stopPropagation() // 메모 선택 이벤트 방지
-    if (confirm('이 메모를 삭제하시겠습니까?')) {
-      onDeleteNote(note.id)
-    }
+  onDeleteNote(note.id)
   }
 
   return (
