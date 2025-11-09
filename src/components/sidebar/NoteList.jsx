@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo } from 'react'
 import { createPortal } from 'react-dom'
 
 // 드래그 중인 아이템을 저장하는 모듈 변수 (export하여 다른 모듈과 공유)
@@ -10,7 +10,7 @@ export const setCurrentDraggedItem = (item) => {
 }
 
 // 간단한 메모 아이템 컴포넌트 (VSCode 탐색기 스타일)
-export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNote, onRenameNote, onToggleFavorite, onMoveNote, onReorderNote, level }) {
+export const NoteItemSimple = memo(function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNote, onRenameNote, onToggleFavorite, onMoveNote, onReorderNote, level }) {
   const noteData = note.data
   const isSelected = note.id === selectedNoteId
   const [isEditing, setIsEditing] = useState(false)
@@ -80,7 +80,6 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
     e.stopPropagation()
 
     openMenu(e.clientX, e.clientY)
-    console.log('🟢 [NoteItem] 메뉴 열기 완료!')
   }
 
   // 외부 클릭은 오버레이로 처리하므로 별도 useEffect 불필요
@@ -134,7 +133,6 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
     }
 
     setIsDragging(true)
-    console.log('🔵 메모 드래그 시작:', note.id, noteData.title)
 
     const dragData = {
       type: 'NOTE',
@@ -151,7 +149,6 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
   const handleDragEnd = (e) => {
     setIsDragging(false)
     setCurrentDraggedItem(null)
-    console.log('🔵 메모 드래그 종료:', note.id)
   }
 
   // 드래그 오버 (순서 변경)
@@ -205,7 +202,6 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
       const item = JSON.parse(data)
 
       if (item.type === 'NOTE' && item.id !== note.id && item.data.folder_id === noteData.folder_id) {
-        console.log('✅ [NoteItem] onReorderNote 호출:', item.id, '->', note.id, position)
         onReorderNote?.(item.id, note.id, position)
       }
     } catch (err) {
@@ -338,7 +334,7 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
           />
           <div
             ref={menuRef}
-            className="fixed z-[10000] w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1"
+            className="fixed z-[10000] w-48 bg-white dark:bg-[#252526] rounded-lg shadow-xl border border-gray-200 dark:border-[#3e3e42] py-1"
             style={{
               top: `${menuPosition.top}px`,
               left: `${menuPosition.left}px`,
@@ -349,7 +345,7 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
           >
           <button
             onClick={startRename}
-            className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-[#cccccc] hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors"
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -364,7 +360,7 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
           {noteData.is_favorite && (
             <button
               onClick={handleToggleFavorite}
-              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-[#cccccc] hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -398,7 +394,7 @@ export function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNot
       </div>
     </div>
   )
-}
+})
 
 function NoteItem({ note, selectedNoteId, onNoteSelect, onDeleteNote }) {
   const noteData = note.data

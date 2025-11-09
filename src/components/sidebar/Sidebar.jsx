@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import FolderTree from './FolderTree'
 import { NoteItemSimple, currentDraggedItem } from './NoteList'
@@ -68,7 +68,6 @@ function RootDropZone({ userName, onDrop, notes, onNewFolder }) {
       if (!data) return
 
       const item = JSON.parse(data)
-      console.log('✅ 루트로 드롭:', item)
       onDrop(item)
     } catch (err) {
       console.error('루트 드롭 처리 오류:', err)
@@ -198,7 +197,6 @@ function SidebarContent({
   }
 
   const handleRootDrop = (item) => {
-    console.log('메인 폴더로 이동:', item)
     if (item.type === 'NOTE') {
       onMoveNote(item.id, null)
     } else if (item.type === 'FOLDER') {
@@ -252,7 +250,9 @@ function SidebarContent({
   }
 
   // 폴더에 속하지 않은 메모들 (루트 메모)
-  const rootNotes = notes.filter(note => !note.data.folder_id)
+  const rootNotes = useMemo(() => {
+    return notes.filter(note => !note.data.folder_id)
+  }, [notes])
 
   return (
     <>

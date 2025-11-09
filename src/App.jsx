@@ -52,7 +52,6 @@ function App() {
     const handleStorageChange = (e) => {
       // Supabase auth 관련 키가 변경되었을 때만 재확인
       if (e.key && (e.key.includes('sb-') || e.key.includes('supabase'))) {
-        console.log('🔄 Storage changed, rechecking auth:', e.key)
         checkAuth(false) // 재확인 시에는 로딩 표시하지 않음
       }
     }

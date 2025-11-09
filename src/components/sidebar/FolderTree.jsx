@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { NoteItemSimple, currentDraggedItem, setCurrentDraggedItem } from './NoteList'
 
-function FolderItem({
+const FolderItem = memo(function FolderItem({
   folder,
   selectedFolderId,
   onFolderSelect,
@@ -41,7 +41,9 @@ function FolderItem({
   const isSelected = folder.id === selectedFolderId
 
   // 이 폴더에 속한 메모들
-  const folderNotes = notes.filter(note => note.data.folder_id === folder.id)
+  const folderNotes = useMemo(() => {
+    return notes.filter(note => note.data.folder_id === folder.id)
+  }, [notes, folder.id])
 
   // HTML5 Drag & Drop - 드래그 시작
   const handleDragStart = (e) => {
@@ -51,7 +53,6 @@ function FolderItem({
     }
 
     setIsDragging(true)
-    console.log('🔵 폴더 드래그 시작:', folder.id, folder.data.name)
 
     const dragData = {
       type: 'FOLDER',
@@ -69,7 +70,6 @@ function FolderItem({
   const handleDragEnd = (e) => {
     setIsDragging(false)
     setCurrentDraggedItem(null)
-    console.log('🔵 폴더 드래그 종료:', folder.id)
   }
 
   // HTML5 Drag & Drop - 드래그 오버
@@ -163,64 +163,31 @@ function FolderItem({
     setIsOver(false)
     setDropPosition(null)
 
-    console.log('🎯 [FolderItem] 드롭 이벤트:', { position, targetFolderId: folder.id, targetFolderName: folder.data.name })
-
     if (!position) {
-      console.log('⚠️ [FolderItem] position 없음, 드롭 취소')
       return
     }
 
     try {
       const data = e.dataTransfer.getData('application/json')
       if (!data) {
-        console.log('⚠️ [FolderItem] 드래그 데이터 없음')
         return
       }
 
       const item = JSON.parse(data)
-      console.log('🎯 [FolderItem] 파싱된 아이템:', {
-        type: item.type,
-        id: item.id,
-        name: item.data?.name || item.data?.title,
-        parentId: item.data?.parent_id
-      })
 
       if (item.type === 'FOLDER' && item.data.parent_id === folder.data.parent_id && position && position !== 'inside') {
         if (item.id !== folder.id) {
-          console.log('✅ [FolderItem] onReorderFolder 호출:', {
-            draggedFolderId: item.id,
-            draggedFolderName: item.data?.name,
-            targetFolderId: folder.id,
-            targetFolderName: folder.data.name,
-            position,
-            sameParent: item.data.parent_id === folder.data.parent_id
-          })
           onReorderFolder?.(item.id, folder.id, position)
-        } else {
-          console.log('⚠️ [FolderItem] 자기 자신에게 드롭, 무시')
         }
         return
-      } else if (item.type === 'FOLDER') {
-        console.log('⚠️ [FolderItem] 폴더 순서 변경 조건 불만족:', {
-          isFolder: item.type === 'FOLDER',
-          sameParent: item.data.parent_id === folder.data.parent_id,
-          hasPosition: !!position,
-          positionNotInside: position !== 'inside',
-          draggedParent: item.data.parent_id,
-          targetParent: folder.data.parent_id
-        })
       }
-
-      console.log('✅ [FolderItem] 폴더/메모를 폴더 안으로 이동:', item.type, '-> 폴더:', folder.id)
 
       if (item.type === 'NOTE') {
         if (item.data.folder_id !== folder.id) {
-          console.log('✅ [FolderItem] onMoveNote 호출:', item.id, '->', folder.id)
           onMoveNote(item.id, folder.id)
         }
       } else if (item.type === 'FOLDER') {
         if (item.id !== folder.id && item.data.parent_id !== folder.id) {
-          console.log('✅ [FolderItem] onMoveFolder 호출:', item.id, '->', folder.id)
           onMoveFolder(item.id, folder.id)
         }
       }
@@ -462,7 +429,7 @@ function FolderItem({
             />
             <div
               ref={menuRef}
-              className="fixed z-[10000] w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1"
+              className="fixed z-[10000] w-48 bg-white dark:bg-[#252526] rounded-lg shadow-xl border border-gray-200 dark:border-[#3e3e42] py-1"
               style={{
                 top: `${menuPosition.top}px`,
                 left: `${menuPosition.left}px`,
@@ -473,7 +440,7 @@ function FolderItem({
             >
               <button
                 onClick={handleCreateSubfolder}
-                className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-[#cccccc] hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -482,7 +449,7 @@ function FolderItem({
               </button>
               <button
                 onClick={startRename}
-                className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-[#cccccc] hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -573,7 +540,7 @@ function FolderItem({
       )}
     </div>
   )
-}
+})
 
 function FolderTree({
   folders,

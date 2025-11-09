@@ -1,4 +1,5 @@
 import { supabase, customStorage } from './supabase'
+const ENABLE_AUTH_DEBUG_LOGS = import.meta.env.VITE_ENABLE_AUTH_DEBUG_LOGS === 'true'
 
 /**
  * 회원가입 함수
@@ -205,11 +206,15 @@ export const getCurrentUser = async () => {
       errorMessage.includes('Refresh Token Not Found')
 
     if (isSessionMissing) {
-      console.warn('[auth] Session expired. Clearing stored credentials.')
+      if (ENABLE_AUTH_DEBUG_LOGS) {
+        console.warn('[auth] Session expired. Clearing stored credentials.')
+      }
       try {
         await supabase.auth.signOut()
       } catch (signOutError) {
-        console.warn('[auth] Sign out during session cleanup failed:', signOutError?.message || signOutError)
+        if (ENABLE_AUTH_DEBUG_LOGS) {
+          console.warn('[auth] Sign out during session cleanup failed:', signOutError?.message || signOutError)
+        }
       }
 
       // 남아있는 스토리지 세션 제거

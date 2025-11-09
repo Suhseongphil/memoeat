@@ -359,35 +359,69 @@
 
 ## Phase 7: 성능 최적화
 
-### 7.1 코드 분할
+> **최적화 원칙**: 기존 사용자 동작은 그대로 유지하면서 코드 효율과 품질 향상
+>
+> 상세 계획은 `OPTIMIZATION_PLAN.md` 참고
 
-- [ ] React.lazy() + Suspense 적용
-- [ ] 라우트별 코드 스플리팅
+### 7.1 데이터 최적화 (최우선)
 
-### 7.2 데이터 최적화
+- [ ] **7.1.1 React Query 캐싱 전략 설정**
 
-- [ ] React Query 캐싱 전략 설정
-- [ ] Optimistic Updates 적용
-- [ ] Pagination 또는 무한 스크롤 (필요 시)
+  - [ ] `staleTime` 설정 (폴더: 5분, 메모: 2분)
+  - [ ] `cacheTime` 설정 (10분)
+  - [ ] `refetchOnMount`, `refetchOnReconnect` 설정
+  - [ ] Mutation `retry: 0` 설정
 
-### 7.3 렌더링 최적화
+- [ ] **7.1.2 Supabase 쿼리 최적화**
 
-- [ ] React.memo 적용 (자주 리렌더되는 컴포넌트)
-- [ ] useMemo 적용
-- [ ] useCallback 적용
-- [ ] Virtual List (메모가 많을 때)
+  - [ ] `getNotes`: 필요한 컬럼만 select (`id, data, created_at, updated_at`)
+  - [ ] `getFolders`: 필요한 컬럼만 select (`id, data, created_at`)
+  - [ ] 모든 update/insert 쿼리 최적화
+
+- [ ] **7.1.3 Optimistic Updates 적용 (선택적)**
+  - [ ] 메모 생성/삭제
+  - [ ] 폴더 생성/삭제
+  - [ ] 즐겨찾기 토글
+
+### 7.2 렌더링 최적화
+
+- [ ] **7.2.1 React.memo 적용**
+
+  - [ ] `NoteItemSimple`: 자주 리렌더되는 컴포넌트
+  - [ ] `FolderItem`: 폴더 트리 최적화
+  - [ ] `TabBar`: 탭 리스트 최적화
+
+- [ ] **7.2.2 useCallback 적용**
+
+  - [ ] MainPage의 핸들러 함수들 (handleNoteSelect, handleTabClose 등)
+  - [ ] Sidebar의 핸들러 함수들
+
+- [ ] **7.2.3 useMemo 추가 적용**
+  - [ ] `folderTree` 계산 (이미 buildFolderTree 사용 중)
+  - [ ] 필터링된 메모 리스트 (rootNotes, favoriteNotes 등)
+
+### 7.3 코드 분할
+
+- [ ] **7.3.1 라우트별 코드 스플리팅**
+  - [ ] `AdminPage` lazy loading (거의 사용 안 함)
+  - [ ] `Editor` 컴포넌트 lazy loading (Tiptap 무거움)
 
 ### 7.4 빌드 최적화
 
-- [ ] Vite 빌드 최적화 설정
-- [ ] Tree-shaking 확인
-- [ ] 번들 크기 분석
+- [ ] **7.4.1 Vite 빌드 최적화 설정**
 
-### 7.5 Supabase 쿼리 최적화
+  - [ ] `manualChunks` 설정 (큰 라이브러리 분리)
+  - [ ] `chunkSizeWarningLimit` 설정
+  - [ ] Tree-shaking 확인
 
-- [ ] 필요한 컬럼만 select
-- [ ] JSONB 쿼리 최적화
-- [ ] 인덱스 활용 확인
+- [ ] **7.4.2 번들 크기 분석**
+  - [ ] `vite-bundle-visualizer` 또는 `rollup-plugin-visualizer` 사용
+  - [ ] 큰 의존성 확인 및 최적화
+
+### 7.5 추가 최적화 (선택적)
+
+- [ ] Virtual List (메모가 100개 이상일 때만 적용)
+- [ ] Pagination/무한 스크롤 (현재는 제외, 필요 시 추가)
 
 ### ✅ Phase 7 완료 확인
 
