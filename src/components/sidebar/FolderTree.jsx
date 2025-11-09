@@ -53,7 +53,6 @@ const FolderItem = memo(function FolderItem({
     }
 
     setIsDragging(true)
-    console.log('🔵 폴더 드래그 시작:', folder.id, folder.data.name)
 
     const dragData = {
       type: 'FOLDER',
@@ -71,7 +70,6 @@ const FolderItem = memo(function FolderItem({
   const handleDragEnd = (e) => {
     setIsDragging(false)
     setCurrentDraggedItem(null)
-    console.log('🔵 폴더 드래그 종료:', folder.id)
   }
 
   // HTML5 Drag & Drop - 드래그 오버
@@ -165,64 +163,31 @@ const FolderItem = memo(function FolderItem({
     setIsOver(false)
     setDropPosition(null)
 
-    console.log('🎯 [FolderItem] 드롭 이벤트:', { position, targetFolderId: folder.id, targetFolderName: folder.data.name })
-
     if (!position) {
-      console.log('⚠️ [FolderItem] position 없음, 드롭 취소')
       return
     }
 
     try {
       const data = e.dataTransfer.getData('application/json')
       if (!data) {
-        console.log('⚠️ [FolderItem] 드래그 데이터 없음')
         return
       }
 
       const item = JSON.parse(data)
-      console.log('🎯 [FolderItem] 파싱된 아이템:', {
-        type: item.type,
-        id: item.id,
-        name: item.data?.name || item.data?.title,
-        parentId: item.data?.parent_id
-      })
 
       if (item.type === 'FOLDER' && item.data.parent_id === folder.data.parent_id && position && position !== 'inside') {
         if (item.id !== folder.id) {
-          console.log('✅ [FolderItem] onReorderFolder 호출:', {
-            draggedFolderId: item.id,
-            draggedFolderName: item.data?.name,
-            targetFolderId: folder.id,
-            targetFolderName: folder.data.name,
-            position,
-            sameParent: item.data.parent_id === folder.data.parent_id
-          })
           onReorderFolder?.(item.id, folder.id, position)
-        } else {
-          console.log('⚠️ [FolderItem] 자기 자신에게 드롭, 무시')
         }
         return
-      } else if (item.type === 'FOLDER') {
-        console.log('⚠️ [FolderItem] 폴더 순서 변경 조건 불만족:', {
-          isFolder: item.type === 'FOLDER',
-          sameParent: item.data.parent_id === folder.data.parent_id,
-          hasPosition: !!position,
-          positionNotInside: position !== 'inside',
-          draggedParent: item.data.parent_id,
-          targetParent: folder.data.parent_id
-        })
       }
-
-      console.log('✅ [FolderItem] 폴더/메모를 폴더 안으로 이동:', item.type, '-> 폴더:', folder.id)
 
       if (item.type === 'NOTE') {
         if (item.data.folder_id !== folder.id) {
-          console.log('✅ [FolderItem] onMoveNote 호출:', item.id, '->', folder.id)
           onMoveNote(item.id, folder.id)
         }
       } else if (item.type === 'FOLDER') {
         if (item.id !== folder.id && item.data.parent_id !== folder.id) {
-          console.log('✅ [FolderItem] onMoveFolder 호출:', item.id, '->', folder.id)
           onMoveFolder(item.id, folder.id)
         }
       }

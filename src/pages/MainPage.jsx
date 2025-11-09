@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Header from '../components/common/Header'
 import Sidebar from '../components/sidebar/Sidebar'
@@ -137,17 +137,7 @@ function MainPage() {
       .filter(Boolean) // null/undefined 제거
     
     // 디버깅: 순서 확인
-    if (openedNotes.length > 0 && result.length > 0) {
-      const resultIds = result.map(n => n.id)
-      const openedNotesIds = openedNotes.slice(0, result.length)
-      if (JSON.stringify(resultIds) !== JSON.stringify(openedNotesIds)) {
-        console.warn('⚠️ [openedNotesData] 순서 불일치 감지:', {
-          openedNotesIds,
-          resultIds,
-          notesLength: notes.length
-        })
-      }
-    }
+    // openedNotes 순서 유지
     
     return result
   }, [openedNotes, notes])
@@ -180,8 +170,8 @@ function MainPage() {
   const updateNoteMutation = useMutation({
     mutationFn: async ({ noteId, updates }) => {
       const { note, error } = await updateNote(noteId, updates)
-      if (error) throw new Error(error)
-      return note
+      if (error && error !== 'NOTE_NOT_FOUND') throw new Error(error)
+      return note || null
     },
     onError: (error) => {
       console.error('메모 업데이트 오류:', error)
@@ -192,8 +182,8 @@ function MainPage() {
   const updateNoteWithRefreshMutation = useMutation({
     mutationFn: async ({ noteId, updates }) => {
       const { note, error } = await updateNote(noteId, updates)
-      if (error) throw new Error(error)
-      return note
+      if (error && error !== 'NOTE_NOT_FOUND') throw new Error(error)
+      return note || null
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['notes'])
@@ -215,17 +205,13 @@ function MainPage() {
       // 삭제된 메모가 열린 탭에 있으면 해당 탭 닫기
       setOpenedNotes((prev) => {
         const newOpenedNotes = prev.filter((id) => id !== deletedNoteId)
-        // 삭제된 탭이 활성 탭이었다면 다른 탭으로 전환
-        if (activeTabId === deletedNoteId) {
-          const deletedIndex = prev.indexOf(deletedNoteId)
-          if (newOpenedNotes.length > 0) {
-            // 이전 탭 or 다음 탭으로 전환
-            const newActiveIndex = Math.max(0, deletedIndex - 1)
-            setActiveTabId(newOpenedNotes[newActiveIndex])
-          } else {
-            setActiveTabId(null)
-          }
-        }
+        const closedIndex = prev.indexOf(deletedNoteId)
+        setActiveTabId((currentActive) => {
+          if (currentActive !== deletedNoteId) return currentActive
+          if (newOpenedNotes.length === 0) return null
+          const newActiveIndex = Math.max(0, closedIndex - 1)
+          return newOpenedNotes[newActiveIndex]
+        })
         return newOpenedNotes
       })
     },
@@ -233,6 +219,20 @@ function MainPage() {
       alert(`메모 삭제 실패: ${error.message}`)
     }
   })
+
+  const removeNoteFromTabs = useCallback((noteId) => {
+    setOpenedNotes((prev) => {
+      const newOpenedNotes = prev.filter((id) => id !== noteId)
+      const closedIndex = prev.indexOf(noteId)
+      setActiveTabId((currentActive) => {
+        if (currentActive !== noteId) return currentActive
+        if (newOpenedNotes.length === 0) return null
+        const newActiveIndex = Math.max(0, closedIndex - 1)
+        return newOpenedNotes[newActiveIndex]
+      })
+      return newOpenedNotes
+    })
+  }, [])
 
   // 폴더 생성
   const createFolderMutation = useMutation({
@@ -286,26 +286,26 @@ function MainPage() {
     }
   })
 
-  const handleNewNote = () => {
+  const handleNewNote = useCallback(() => {
     createNoteMutation.mutate()
-  }
+  }, [createNoteMutation])
 
-  const handleNewFolder = (parentId = null) => {
+  const handleNewFolder = useCallback((parentId = null) => {
     createFolderMutation.mutate(parentId)
-  }
+  }, [createFolderMutation])
 
   const handleFolderSelect = (folderId) => {
     // 같은 폴더 클릭 시 필터 해제
     setSelectedFolderId(folderId === selectedFolderId ? null : folderId)
   }
 
-  const handleRenameFolder = (folderId, name) => {
+  const handleRenameFolder = useCallback((folderId, name) => {
     renameFolderMutation.mutate({ folderId, name })
-  }
+  }, [renameFolderMutation])
 
-  const handleDeleteFolder = (folderId) => {
+  const handleDeleteFolder = useCallback((folderId) => {
     deleteFolderMutation.mutate(folderId)
-  }
+  }, [deleteFolderMutation])
 
   const handleNoteSelect = (noteId) => {
     // 이미 열려있는 탭이면 해당 탭으로 전환
@@ -354,14 +354,19 @@ function MainPage() {
     queryClient.invalidateQueries(['notes'])
   }
 
-  const handleDeleteNote = (noteId) => {
+  const handleDeleteNote = useCallback((noteId) => {
     deleteNoteMutation.mutate(noteId)
-  }
+  }, [deleteNoteMutation])
 
   const handleRenameNote = async (noteId, newTitle) => {
     const { note, error } = await updateNote(noteId, { title: newTitle })
     if (error) {
-      alert(`제목 변경 실패: ${error}`)
+      if (error === 'NOTE_NOT_FOUND') {
+        alert('해당 메모를 찾을 수 없습니다. 이미 삭제되었을 수 있습니다.')
+        removeNoteFromTabs(noteId)
+      } else {
+        alert(`제목 변경 실패: ${error}`)
+      }
     } else {
       // 캐시를 직접 업데이트하여 즉시 반영
       queryClient.setQueryData(['notes', user?.id], (oldNotes = []) => {
@@ -377,7 +382,12 @@ function MainPage() {
   const handleToggleFavorite = async (noteId) => {
     const { note, error } = await toggleFavorite(noteId)
     if (error) {
-      alert(`즐겨찾기 변경 실패: ${error}`)
+      if (error === 'NOTE_NOT_FOUND') {
+        alert('해당 메모를 찾을 수 없습니다. 이미 삭제되었을 수 있습니다.')
+        removeNoteFromTabs(noteId)
+      } else {
+        alert(`즐겨찾기 변경 실패: ${error}`)
+      }
     } else {
       // 캐시를 직접 업데이트하여 즉시 반영
       queryClient.setQueryData(['notes', user?.id], (oldNotes = []) => {
@@ -390,33 +400,36 @@ function MainPage() {
     }
   }
 
-  const handleUpdateNote = (updates) => {
+  const handleMenuToggle = useCallback(() => {
+    setSidebarOpen((prev) => !prev)
+  }, [])
+
+  const handleSidebarClose = useCallback(() => {
+    setSidebarOpen(false)
+  }, [])
+
+  const handleUpdateNote = useCallback((updates) => {
     // 에디터 내부 로컬 상태만 업데이트 (사이드바는 변경 안됨)
     // 실제 저장은 handleSaveNote에서만 수행
-  }
+  }, [])
 
   const handleSaveNote = async (noteId, updates) => {
     // 자동 저장 완료 후에만 사이드바 업데이트
     await updateNoteMutation.mutateAsync({ noteId, updates })
   }
 
-  const handleMenuToggle = () => {
-    setSidebarOpen((prev) => !prev)
-  }
-
-  const handleSidebarClose = () => {
-    setSidebarOpen(false)
-  }
-
   // 메모를 다른 폴더로 이동
   const handleMoveNote = async (noteId, targetFolderId) => {
-    console.log('📦 [handleMoveNote] 시작:', { noteId, targetFolderId, openedNotes })
-    
     const { note, error } = await updateNote(noteId, { folder_id: targetFolderId })
     if (error) {
-      alert(`메모 이동 실패: ${error}`)
+      if (error === 'NOTE_NOT_FOUND') {
+        alert('해당 메모를 찾을 수 없습니다. 이미 삭제되었을 수 있습니다.')
+        removeNoteFromTabs(noteId)
+      } else {
+        alert(`메모 이동 실패: ${error}`)
+      }
     } else {
-      // 캐시를 직접 업데이트하여 탭 순서 유지
+      // 캐시를 직접 업데이트하여 탭 순서를 유지
       // invalidateQueries는 notes 배열을 완전히 다시 로드하면서 순서가 바뀔 수 있음
       queryClient.setQueryData(['notes', user?.id], (oldNotes = []) => {
         return oldNotes.map(n => n.id === noteId ? note : n)
@@ -448,24 +461,20 @@ function MainPage() {
 
   // 메모 순서 변경 (위로/아래로)
   const handleReorderNote = async (noteId, targetNoteId, position) => {
-    console.log('🔷 [MainPage] handleReorderNote 호출:', { noteId, targetNoteId, position })
     const { success, error } = await reorderNotes(noteId, targetNoteId, position, notes)
     if (error) {
-      console.error('❌ [MainPage] 메모 순서 변경 실패:', error)
+      console.error('메모 순서 변경 실패:', error)
     } else {
-      console.log('✅ [MainPage] 메모 순서 변경 성공, 쿼리 무효화')
       queryClient.invalidateQueries(['notes'])
     }
   }
 
   // 폴더 순서 변경
   const handleReorderFolder = async (folderId, targetFolderId, position) => {
-    console.log('🔷 [MainPage] handleReorderFolder 호출:', { folderId, targetFolderId, position })
     const { success, error } = await reorderFolders(folderId, targetFolderId, position, foldersData)
     if (error) {
-      console.error('❌ [MainPage] 폴더 순서 변경 실패:', error)
+      console.error('폴더 순서 변경 실패:', error)
     } else {
-      console.log('✅ [MainPage] 폴더 순서 변경 성공, 쿼리 무효화')
       queryClient.invalidateQueries(['folders'])
     }
   }

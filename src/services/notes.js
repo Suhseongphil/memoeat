@@ -116,9 +116,12 @@ export const getNote = async (noteId) => {
       .from('notes')
       .select('id, data, created_at, updated_at')
       .eq('id', noteId)
-      .single()
+      .maybeSingle()
 
     if (error) throw error
+    if (!note) {
+      return { note: null, error: 'NOTE_NOT_FOUND' }
+    }
 
     return { note, error: null }
   } catch (error) {
@@ -137,6 +140,9 @@ export const updateNote = async (noteId, updates) => {
   try {
     // 기존 메모 가져오기
     const { note: existingNote, error: fetchError } = await getNote(noteId)
+    if (fetchError === 'NOTE_NOT_FOUND') {
+      return { note: null, error: 'NOTE_NOT_FOUND' }
+    }
     if (fetchError) throw new Error(fetchError)
 
     // 데이터 병합
@@ -154,12 +160,23 @@ export const updateNote = async (noteId, updates) => {
       })
       .eq('id', noteId)
       .select('id, data, created_at, updated_at')
-      .single()
+      .maybeSingle()
 
-    if (error) throw error
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return { note: null, error: 'NOTE_NOT_FOUND' }
+      }
+      throw error
+    }
+    if (!note) {
+      return { note: null, error: 'NOTE_NOT_FOUND' }
+    }
 
     return { note, error: null }
   } catch (error) {
+    if (error?.code === 'PGRST116') {
+      return { note: null, error: 'NOTE_NOT_FOUND' }
+    }
     console.error('UpdateNote error:', error)
     return { note: null, error: error.message }
   }
@@ -194,6 +211,9 @@ export const deleteNote = async (noteId) => {
 export const toggleFavorite = async (noteId) => {
   try {
     const { note: existingNote, error: fetchError } = await getNote(noteId)
+    if (fetchError === 'NOTE_NOT_FOUND') {
+      return { note: null, error: 'NOTE_NOT_FOUND' }
+    }
     if (fetchError) throw new Error(fetchError)
 
     const updatedData = {
@@ -204,18 +224,26 @@ export const toggleFavorite = async (noteId) => {
 
     const { data: note, error } = await supabase
       .from('notes')
-      .update({
-        data: updatedData,
-        updated_at: new Date().toISOString()
-      })
+      .update({ data: updatedData })
       .eq('id', noteId)
       .select('id, data, created_at, updated_at')
-      .single()
+      .maybeSingle()
 
-    if (error) throw error
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return { note: null, error: 'NOTE_NOT_FOUND' }
+      }
+      throw error
+    }
+    if (!note) {
+      return { note: null, error: 'NOTE_NOT_FOUND' }
+    }
 
     return { note, error: null }
   } catch (error) {
+    if (error?.code === 'PGRST116') {
+      return { note: null, error: 'NOTE_NOT_FOUND' }
+    }
     console.error('ToggleFavorite error:', error)
     return { note: null, error: error.message }
   }
@@ -230,18 +258,11 @@ export const toggleFavorite = async (noteId) => {
  */
 export const reorderNotes = async (noteId, targetNoteId, position, allNotes) => {
   try {
-    console.log('🔄 [reorderNotes] 시작:', { noteId, targetNoteId, position })
-
     const draggedNote = allNotes.find(n => n.id === noteId)
     const targetNote = allNotes.find(n => n.id === targetNoteId)
 
-    console.log('🔄 [reorderNotes] 찾은 메모:', {
-      draggedNote: draggedNote?.data?.title,
-      targetNote: targetNote?.data?.title
-    })
-
     if (!draggedNote || !targetNote) {
-      console.error('❌ [reorderNotes] 메모를 찾을 수 없음')
+      console.error('메모를 찾을 수 없습니다')
       return { success: false, error: '메모를 찾을 수 없습니다' }
     }
 
@@ -251,22 +272,13 @@ export const reorderNotes = async (noteId, targetNoteId, position, allNotes) => 
       .filter(n => n.data.folder_id === folderId && n.id !== noteId)
       .sort((a, b) => (a.data.order || 0) - (b.data.order || 0))
 
-    console.log('🔄 [reorderNotes] 같은 폴더의 형제 메모들:',
-      siblings.map(n => ({ id: n.id, title: n.data?.title, order: n.data?.order }))
-    )
-
     // 타겟의 인덱스 찾기
     const targetIndex = siblings.findIndex(n => n.id === targetNoteId)
-    console.log('🔄 [reorderNotes] 타겟 인덱스:', targetIndex)
 
     // 새로운 순서 계산
     const insertIndex = position === 'before' ? targetIndex : targetIndex + 1
-    console.log('🔄 [reorderNotes] 삽입 인덱스:', insertIndex, '(position:', position, ')')
 
     siblings.splice(insertIndex, 0, draggedNote)
-    console.log('🔄 [reorderNotes] 재정렬 후:',
-      siblings.map((n, i) => ({ index: i, id: n.id, title: n.data?.title }))
-    )
 
     // order 값 재할당
     const updates = []
@@ -282,13 +294,6 @@ export const reorderNotes = async (noteId, targetNoteId, position, allNotes) => 
           updated_at: new Date().toISOString()
         }
 
-        console.log('🔄 [reorderNotes] 업데이트:', {
-          id: note.id,
-          title: note.data?.title,
-          oldOrder: note.data.order,
-          newOrder
-        })
-
         updates.push(
           supabase
             .from('notes')
@@ -301,15 +306,12 @@ export const reorderNotes = async (noteId, targetNoteId, position, allNotes) => 
       }
     }
 
-    console.log('🔄 [reorderNotes] 총 업데이트 개수:', updates.length)
-
     // 모든 업데이트 실행
     await Promise.all(updates)
 
-    console.log('✅ [reorderNotes] 완료!')
     return { success: true, error: null }
   } catch (error) {
-    console.error('❌ [reorderNotes] 오류:', error)
+    console.error('메모 순서 변경 오류:', error)
     return { success: false, error: error.message }
   }
 }

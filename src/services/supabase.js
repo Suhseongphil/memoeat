@@ -28,7 +28,6 @@ class CustomStorageAdapter {
       // localStorage에서 먼저 확인
       for (const key of possibleKeys) {
         if (localStorage.getItem(key)) {
-          console.log(`🔍 CustomStorage: Detected localStorage for key: ${key}`)
           return 'local'
         }
       }
@@ -36,7 +35,6 @@ class CustomStorageAdapter {
       // sessionStorage에서 확인
       for (const key of possibleKeys) {
         if (sessionStorage.getItem(key)) {
-          console.log(`🔍 CustomStorage: Detected sessionStorage for key: ${key}`)
           return 'session'
         }
       }
@@ -45,7 +43,6 @@ class CustomStorageAdapter {
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i)
         if (key && key.includes('sb-') && key.includes('auth')) {
-          console.log(`🔍 CustomStorage: Detected localStorage for key: ${key}`)
           return 'local'
         }
       }
@@ -53,12 +50,10 @@ class CustomStorageAdapter {
       for (let i = 0; i < sessionStorage.length; i++) {
         const key = sessionStorage.key(i)
         if (key && key.includes('sb-') && key.includes('auth')) {
-          console.log(`🔍 CustomStorage: Detected sessionStorage for key: ${key}`)
           return 'session'
         }
       }
 
-      console.log(`🔍 CustomStorage: No session found, defaulting to localStorage`)
       return 'local' // 기본값
     } catch (error) {
       console.error('🔍 CustomStorage: Error detecting storage type:', error)
@@ -67,7 +62,6 @@ class CustomStorageAdapter {
   }
 
   setStorageType(type) {
-    console.log(`🔧 CustomStorage: Switching to ${type} storage`)
     this.storageType = type
   }
 
@@ -80,11 +74,9 @@ class CustomStorageAdapter {
     // localStorage를 먼저 확인 (rememberMe가 true인 경우)
     let value = localStorage.getItem(key)
     if (value) {
-      console.log(`📖 CustomStorage: getItem(${key}) found in localStorage`)
       // localStorage에서 찾았으면 타입을 local로 설정하여 일관성 유지
       if (this.storageType !== 'local') {
         this.storageType = 'local'
-        console.log(`🔄 CustomStorage: Updated storageType to 'local'`)
       }
       return value
     }
@@ -92,23 +84,19 @@ class CustomStorageAdapter {
     // sessionStorage 확인
     value = sessionStorage.getItem(key)
     if (value) {
-      console.log(`📖 CustomStorage: getItem(${key}) found in sessionStorage`)
       // sessionStorage에서 찾았으면 타입을 session으로 설정하여 일관성 유지
       if (this.storageType !== 'session') {
         this.storageType = 'session'
-        console.log(`🔄 CustomStorage: Updated storageType to 'session'`)
       }
       return value
     }
 
-    console.log(`📖 CustomStorage: getItem(${key}) not found in any storage`)
     return null
   }
 
   setItem(key, value) {
     // storageType에 따라 저장하되, 저장 시점에 양쪽 storage를 확인하여 올바른 위치에 저장
     const targetStorage = this.storageType === 'session' ? sessionStorage : localStorage
-    console.log(`💾 CustomStorage: setItem(${key}) to ${this.storageType}Storage`)
 
     targetStorage.setItem(key, value)
 
@@ -118,7 +106,6 @@ class CustomStorageAdapter {
   }
 
   removeItem(key) {
-    console.log(`🗑️ CustomStorage: removeItem(${key}) from both storages`)
     // 양쪽 storage에서 모두 제거
     localStorage.removeItem(key)
     sessionStorage.removeItem(key)
@@ -163,8 +150,6 @@ class CustomStorageAdapter {
     keys.sessionStorage.forEach((key) => {
       sessionStorage.removeItem(key)
     })
-
-    console.log('CustomStorage: Cleared auth session from both storages')
   }
 }
 

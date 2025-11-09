@@ -80,7 +80,6 @@ export const NoteItemSimple = memo(function NoteItemSimple({ note, selectedNoteI
     e.stopPropagation()
 
     openMenu(e.clientX, e.clientY)
-    console.log('🟢 [NoteItem] 메뉴 열기 완료!')
   }
 
   // 외부 클릭은 오버레이로 처리하므로 별도 useEffect 불필요
@@ -134,7 +133,6 @@ export const NoteItemSimple = memo(function NoteItemSimple({ note, selectedNoteI
     }
 
     setIsDragging(true)
-    console.log('🔵 메모 드래그 시작:', note.id, noteData.title)
 
     const dragData = {
       type: 'NOTE',
@@ -151,7 +149,6 @@ export const NoteItemSimple = memo(function NoteItemSimple({ note, selectedNoteI
   const handleDragEnd = (e) => {
     setIsDragging(false)
     setCurrentDraggedItem(null)
-    console.log('🔵 메모 드래그 종료:', note.id)
   }
 
   // 드래그 오버 (순서 변경)
@@ -205,7 +202,6 @@ export const NoteItemSimple = memo(function NoteItemSimple({ note, selectedNoteI
       const item = JSON.parse(data)
 
       if (item.type === 'NOTE' && item.id !== note.id && item.data.folder_id === noteData.folder_id) {
-        console.log('✅ [NoteItem] onReorderNote 호출:', item.id, '->', note.id, position)
         onReorderNote?.(item.id, note.id, position)
       }
     } catch (err) {
