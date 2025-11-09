@@ -65,10 +65,6 @@
 - **Supabase** - PostgreSQL + 인증 + RLS
   - JSONB 컬럼으로 NoSQL처럼 유연하게 활용
 
-### 외부 서비스 & SDK
-
-- **Kakao SDK** - 카카오톡 공유
-
 ### Hosting & Deployment
 
 - **Vercel** - 프론트엔드 + Serverless Functions
@@ -111,9 +107,6 @@ npm run dev
 # Supabase
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_VITE_SUPABASE_ANON_KEY
-
-# Kakao SDK
-VITE_KAKAO_APP_KEY=your_kakao_app_key
 
 # 관리자 이메일 (최초 가입자 자동 승인용)
 VITE_ADMIN_EMAIL=admin@example.com
@@ -198,50 +191,6 @@ CREATE TABLE notes (
 
 ---
 
-## 🚀 개발 진행 상황
-
-개발 로드맵과 진행 상황은 **[CHECKLIST.md](./CHECKLIST.md)** 파일을 참고하세요.
-
-**예상 개발 기간**: 약 6-7주 (하루 2-4시간 작업 기준)
-
----
-
-## 📝 Git 커밋 컨벤션
-
-### 커밋 메시지 형식
-
-```
-<type>(<scope>): <subject>
-
-<body>
-
-<footer>
-```
-
-### Type
-
-- `feat`: 새로운 기능
-- `fix`: 버그 수정
-- `docs`: 문서 수정
-- `style`: 코드 포맷팅 (기능 변경 없음)
-- `refactor`: 코드 리팩토링
-- `test`: 테스트 코드
-- `chore`: 빌드, 패키지 등 기타 작업
-
-### 예시
-
-```bash
-feat(auth): 관리자 승인 방식 회원가입 구현
-
-- user_approvals 테이블 생성
-- 회원가입 시 승인 대기 상태로 저장
-- 로그인 시 승인 여부 확인
-
-Closes #12
-```
-
----
-
 ## 🤝 기여하기
 
 현재는 개인 프로젝트로 진행 중이며, 베타 테스트 이후 기여 가이드를 추가할 예정입니다.
@@ -265,7 +214,6 @@ MIT License - 자유롭게 사용, 수정, 배포 가능
 
 - [Supabase](https://supabase.com/) - 백엔드 인프라
 - [Vercel](https://vercel.com/) - 호스팅
-- 그리고 피드백을 주실 모든 베타 테스터분들께 감사드립니다!
 
 ---
 
