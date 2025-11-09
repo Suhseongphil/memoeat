@@ -30,7 +30,7 @@ export default defineConfig({
             '@tiptap/extension-underline',
           ],
           'supabase-vendor': ['@supabase/supabase-js'],
-          'utils-vendor': ['lodash', 'axios'],
+          'utils-vendor': ['lodash'],
         },
         // 청크 파일명 형식
         chunkFileNames: 'assets/js/[name]-[hash].js',
