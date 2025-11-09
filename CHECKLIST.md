@@ -435,17 +435,17 @@
 
 ### 8.1 배포 준비
 
-- [ ] 환경 변수 정리
-- [ ] 프로덕션 빌드 테스트
-- [ ] 에러 로깅 설정 (Sentry optional)
+- [o] 환경 변수 정리
+- [o] 프로덕션 빌드 테스트
+- [o] 에러 로깅 설정 (Sentry optional)
 
 ### 8.2 Vercel 배포
 
-- [ ] GitHub에 푸시
-- [ ] Vercel에서 프로젝트 Import
-- [ ] 환경 변수 설정 (Vercel Dashboard)
-- [ ] 자동 배포 설정 (main 브랜치)
-- [ ] 커스텀 도메인 연결 (memoeat.com)
+- [o] GitHub에 푸시
+- [o] Vercel에서 프로젝트 Import
+- [o] 환경 변수 설정 (Vercel Dashboard)
+- [o] 자동 배포 설정 (main 브랜치)
+- [o] 커스텀 도메인 연결 (memoeat.com)
 
 ### 8.3 기능 테스트
 
