@@ -43,7 +43,7 @@ export const getFolders = async (userId) => {
   try {
     const { data: folders, error } = await supabase
       .from('folders')
-      .select('*')
+      .select('id, data, created_at')
       .eq('user_id', userId)
       .order('data->order', { ascending: true })
 
@@ -67,7 +67,7 @@ export const updateFolder = async (folderId, updates) => {
     // 기존 폴더 데이터 가져오기
     const { data: existingFolder, error: fetchError } = await supabase
       .from('folders')
-      .select('*')
+      .select('id, data, created_at')
       .eq('id', folderId)
       .single()
 
@@ -87,7 +87,7 @@ export const updateFolder = async (folderId, updates) => {
       .from('folders')
       .update({ data: updatedData })
       .eq('id', folderId)
-      .select()
+      .select('id, data, created_at')
       .single()
 
     if (error) {

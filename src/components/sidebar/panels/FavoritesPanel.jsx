@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import NoteList from '../NoteList'
 
 function FavoritesPanel({
@@ -7,7 +8,9 @@ function FavoritesPanel({
   onDeleteNote
 }) {
   // 즐겨찾기 메모만 필터링
-  const favoriteNotes = notes.filter(note => note.data.is_favorite)
+  const favoriteNotes = useMemo(() => {
+    return notes.filter(note => note.data.is_favorite)
+  }, [notes])
 
   return (
     <div className="flex flex-col h-full">

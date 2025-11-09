@@ -1,3 +1,5 @@
+import { memo } from 'react'
+
 function TabBar({ openedNotes, activeTabId, onTabChange, onTabClose }) {
   const handleTabClick = (noteId) => {
     if (noteId !== activeTabId) {
@@ -90,4 +92,4 @@ function TabBar({ openedNotes, activeTabId, onTabChange, onTabClose }) {
   )
 }
 
-export default TabBar
+export default memo(TabBar)

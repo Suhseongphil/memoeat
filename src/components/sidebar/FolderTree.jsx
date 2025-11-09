@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { NoteItemSimple, currentDraggedItem, setCurrentDraggedItem } from './NoteList'
 
-function FolderItem({
+const FolderItem = memo(function FolderItem({
   folder,
   selectedFolderId,
   onFolderSelect,
@@ -41,7 +41,9 @@ function FolderItem({
   const isSelected = folder.id === selectedFolderId
 
   // 이 폴더에 속한 메모들
-  const folderNotes = notes.filter(note => note.data.folder_id === folder.id)
+  const folderNotes = useMemo(() => {
+    return notes.filter(note => note.data.folder_id === folder.id)
+  }, [notes, folder.id])
 
   // HTML5 Drag & Drop - 드래그 시작
   const handleDragStart = (e) => {
@@ -462,7 +464,7 @@ function FolderItem({
             />
             <div
               ref={menuRef}
-              className="fixed z-[10000] w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1"
+              className="fixed z-[10000] w-48 bg-white dark:bg-[#252526] rounded-lg shadow-xl border border-gray-200 dark:border-[#3e3e42] py-1"
               style={{
                 top: `${menuPosition.top}px`,
                 left: `${menuPosition.left}px`,
@@ -473,7 +475,7 @@ function FolderItem({
             >
               <button
                 onClick={handleCreateSubfolder}
-                className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-[#cccccc] hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -482,7 +484,7 @@ function FolderItem({
               </button>
               <button
                 onClick={startRename}
-                className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-[#cccccc] hover:bg-gray-100 dark:hover:bg-[#2d2d30] transition-colors"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -573,7 +575,7 @@ function FolderItem({
       )}
     </div>
   )
-}
+})
 
 function FolderTree({
   folders,

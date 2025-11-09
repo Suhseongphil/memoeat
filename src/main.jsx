@@ -16,8 +16,14 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false, // 윈도우 포커스 시 자동 refetch 비활성화
+      refetchOnMount: false, // 마운트 시 자동 refetch 비활성화 (캐시된 데이터 사용)
+      refetchOnReconnect: true, // 네트워크 재연결 시 refetch
       retry: 1, // 실패 시 1번만 재시도
-      staleTime: 5 * 60 * 1000, // 5분간 데이터를 fresh 상태로 유지
+      staleTime: 2 * 60 * 1000, // 기본 2분간 데이터를 fresh 상태로 유지 (메모 기준)
+      gcTime: 10 * 60 * 1000, // 10분간 캐시 유지 (이전 cacheTime)
+    },
+    mutations: {
+      retry: 0, // Mutation 실패 시 재시도 안 함
     },
   },
 })

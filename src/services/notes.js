@@ -44,7 +44,7 @@ export const createNote = async (userId, noteData = {}) => {
     const { data: note, error } = await supabase
       .from('notes')
       .insert([{ user_id: userId, data }])
-      .select()
+      .select('id, data, created_at, updated_at')
       .single()
 
     if (error) throw error
@@ -66,7 +66,7 @@ export const getNotes = async (userId, filters = {}) => {
   try {
     let query = supabase
       .from('notes')
-      .select('*')
+      .select('id, data, created_at, updated_at')
       .eq('user_id', userId)
 
     // 폴더 필터
@@ -114,7 +114,7 @@ export const getNote = async (noteId) => {
   try {
     const { data: note, error } = await supabase
       .from('notes')
-      .select('*')
+      .select('id, data, created_at, updated_at')
       .eq('id', noteId)
       .single()
 
@@ -153,7 +153,7 @@ export const updateNote = async (noteId, updates) => {
         updated_at: new Date().toISOString()
       })
       .eq('id', noteId)
-      .select()
+      .select('id, data, created_at, updated_at')
       .single()
 
     if (error) throw error
@@ -209,7 +209,7 @@ export const toggleFavorite = async (noteId) => {
         updated_at: new Date().toISOString()
       })
       .eq('id', noteId)
-      .select()
+      .select('id, data, created_at, updated_at')
       .single()
 
     if (error) throw error

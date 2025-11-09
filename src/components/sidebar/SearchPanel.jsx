@@ -277,13 +277,13 @@ const SearchPanel = forwardRef(({
                           className="fixed inset-0 z-[9998]"
                           onClick={() => setShowMenu(null)}
                         />
-                        <div
-                          ref={menuRef}
-                          className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 z-[9999]"
-                        >
+                          <div
+                            ref={menuRef}
+                            className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-[#252526] rounded-lg shadow-xl border border-gray-200 dark:border-[#3e3e42] py-1 z-[9999]"
+                          >
                           <button
                             onClick={() => handleRename(note.id)}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center transition-colors"
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-[#cccccc] hover:bg-gray-100 dark:hover:bg-[#2d2d30] flex items-center transition-colors"
                           >
                             <svg
                               className="w-4 h-4 mr-3 text-gray-600 dark:text-gray-400"
@@ -303,7 +303,7 @@ const SearchPanel = forwardRef(({
                           {noteData.is_favorite && (
                             <button
                               onClick={() => handleToggleFavorite(note.id)}
-                              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center transition-colors"
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-[#cccccc] hover:bg-gray-100 dark:hover:bg-[#2d2d30] flex items-center transition-colors"
                             >
                               <svg
                                 className="w-4 h-4 mr-3 text-gray-600 dark:text-gray-400"
@@ -361,7 +361,7 @@ const SearchPanel = forwardRef(({
           />
           <div
             ref={contextMenuRef}
-            className="fixed z-[10000] w-40 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1"
+            className="fixed z-[10000] w-40 bg-white dark:bg-[#252526] rounded-lg shadow-xl border border-gray-200 dark:border-[#3e3e42] py-1"
             style={{
               top: `${contextMenu.y}px`,
               left: `${contextMenu.x}px`,

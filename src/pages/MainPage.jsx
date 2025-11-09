@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Header from '../components/common/Header'
 import Sidebar from '../components/sidebar/Sidebar'
@@ -13,13 +13,33 @@ function MainPage() {
   // ProtectedRoute에서 이미 인증 체크 및 사용자 정보 로드 완료
   const { user, preferences } = useAuthStore()
 
-  const [openedNotes, setOpenedNotes] = useState([]) // 열린 탭들의 ID 배열
-  const [activeTabId, setActiveTabId] = useState(null) // 현재 활성 탭 ID
+  const [openedNotes, setOpenedNotes] = useState(() => {
+    // localStorage에서 복원
+    const saved = localStorage.getItem('openedNotes')
+    return saved ? JSON.parse(saved) : []
+  })
+  const [activeTabId, setActiveTabId] = useState(() => {
+    // localStorage에서 복원
+    const saved = localStorage.getItem('activeTabId')
+    return saved || null
+  })
   const [selectedFolderId, setSelectedFolderId] = useState(null) // 선택된 폴더 ID
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window === 'undefined') return true
     return window.innerWidth >= 1024 // 데스크톱에서는 기본적으로 열기, 모바일은 닫기
   })
+  // openedNotes와 activeTabId를 localStorage에 저장
+  useEffect(() => {
+    localStorage.setItem('openedNotes', JSON.stringify(openedNotes))
+  }, [openedNotes])
+
+  useEffect(() => {
+    if (activeTabId) {
+      localStorage.setItem('activeTabId', activeTabId)
+    } else {
+      localStorage.removeItem('activeTabId')
+    }
+  }, [activeTabId])
 
   // 사용자 이름 추출 (이메일의 @ 앞부분)
   const userName = user?.email ? user.email.split('@')[0] : 'User'
@@ -44,11 +64,13 @@ function MainPage() {
       return folders
     },
     enabled: !!user?.id,
-    staleTime: 0
+    staleTime: 5 * 60 * 1000, // 폴더는 5분간 캐시 유지 (변경 빈도가 낮음)
   })
 
   // 폴더 트리 구조 생성
-  const folderTree = buildFolderTree(foldersData)
+  const folderTree = useMemo(() => {
+    return buildFolderTree(foldersData)
+  }, [foldersData])
 
   // 메모 목록 가져오기
   const { data: notes = [], isLoading: notesLoading } = useQuery({
@@ -65,8 +87,42 @@ function MainPage() {
       return notes
     },
     enabled: !!user?.id,
-    staleTime: 0
+    staleTime: 2 * 60 * 1000, // 메모는 2분간 캐시 유지 (변경 빈도가 높음)
   })
+
+  // notes가 로드된 후 openedNotes에 존재하지 않는 메모 ID 제거
+  useEffect(() => {
+    if (notes.length > 0 && openedNotes.length > 0) {
+      const validNoteIds = new Set(notes.map(n => n.id))
+      const validOpenedNotes = openedNotes.filter(id => validNoteIds.has(id))
+      
+      if (validOpenedNotes.length !== openedNotes.length) {
+        setOpenedNotes(validOpenedNotes)
+        // 활성 탭이 유효하지 않으면 첫 번째 탭으로 변경
+        if (activeTabId && !validNoteIds.has(activeTabId)) {
+          setActiveTabId(validOpenedNotes.length > 0 ? validOpenedNotes[0] : null)
+        }
+      }
+    }
+  }, [notes, openedNotes, activeTabId])
+
+  // 화면 크기 변경 시 사이드바 자동 닫기 (모바일/태블릿)
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setSidebarOpen(false)
+      } else {
+        // 데스크톱에서는 기본적으로 열기
+        setSidebarOpen(true)
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+    // 초기 체크
+    handleResize()
+
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // 열린 탭들의 실제 메모 객체 가져오기
   // openedNotes의 순서를 유지하면서 notes에서 메모 객체를 찾음
@@ -307,7 +363,14 @@ function MainPage() {
     if (error) {
       alert(`제목 변경 실패: ${error}`)
     } else {
-      queryClient.invalidateQueries(['notes'])
+      // 캐시를 직접 업데이트하여 즉시 반영
+      queryClient.setQueryData(['notes', user?.id], (oldNotes = []) => {
+        return oldNotes.map(n => n.id === noteId ? note : n)
+      })
+      // 사이드바는 나중에 업데이트
+      setTimeout(() => {
+        queryClient.invalidateQueries(['notes'])
+      }, 100)
     }
   }
 
@@ -316,7 +379,14 @@ function MainPage() {
     if (error) {
       alert(`즐겨찾기 변경 실패: ${error}`)
     } else {
-      queryClient.invalidateQueries(['notes'])
+      // 캐시를 직접 업데이트하여 즉시 반영
+      queryClient.setQueryData(['notes', user?.id], (oldNotes = []) => {
+        return oldNotes.map(n => n.id === noteId ? note : n)
+      })
+      // 사이드바는 나중에 업데이트
+      setTimeout(() => {
+        queryClient.invalidateQueries(['notes'])
+      }, 100)
     }
   }
 

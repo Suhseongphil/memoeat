@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import FolderTree from './FolderTree'
 import { NoteItemSimple, currentDraggedItem } from './NoteList'
@@ -252,7 +252,9 @@ function SidebarContent({
   }
 
   // 폴더에 속하지 않은 메모들 (루트 메모)
-  const rootNotes = notes.filter(note => !note.data.folder_id)
+  const rootNotes = useMemo(() => {
+    return notes.filter(note => !note.data.folder_id)
+  }, [notes])
 
   return (
     <>
