@@ -165,7 +165,7 @@ function App() {
         <p className={`text-base md:text-lg mb-12 px-4 ${
           isDark ? 'text-[#9d9d9d]' : 'text-gray-600'
         }`}>
-          빠르고 간편한 메모 작성, 그리고 AI 링크 요약까지
+          빠르고 간편한 메모 작성과 직관적인 지식 정리까지
         </p>
 
         {/* 버튼 그룹 */}
@@ -193,14 +193,14 @@ function App() {
           <div className={`p-6 rounded-xl shadow-md ${
             isDark ? 'bg-[#252526] border border-[#3e3e42]' : 'bg-white border border-gray-200'
           }`}>
-            <div className="text-3xl mb-3">🔗</div>
+            <div className="text-3xl mb-3">📝</div>
             <h3 className={`font-bold mb-2 ${
               isDark ? 'text-[#cccccc]' : 'text-gray-900'
-            }`}>AI 링크 요약</h3>
+            }`}>집중형 메모 작성</h3>
             <p className={`text-sm ${
               isDark ? 'text-[#9d9d9d]' : 'text-gray-600'
             }`}>
-              웹페이지와 유튜브 영상을 AI가 자동으로 요약
+              필요한 형식을 바로 적용하고 흐름을 끊지 않는 편집 경험
             </p>
           </div>
           <div className={`p-6 rounded-xl shadow-md ${
