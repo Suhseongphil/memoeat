@@ -57,7 +57,12 @@ export const useAuthStore = create((set, get) => ({
       }
 
       // 2. 사용자 정보 가져오기
-      const { user, session, isApproved, error } = await getCurrentUser()
+      const { user, session, isApproved, error, needsReauth } = await getCurrentUser()
+
+      if (needsReauth) {
+        set({ user: null, session: null, isApproved: false, loading: false, error: null })
+        return { success: false, error: 'SESSION_EXPIRED', needsReauth: true }
+      }
 
       if (error) {
         set({ user: null, session: null, isApproved: false, loading: false, error })

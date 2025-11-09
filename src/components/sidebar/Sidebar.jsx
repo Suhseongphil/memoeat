@@ -266,13 +266,21 @@ function SidebarContent({
 
       {/* 사이드바 컨테이너 */}
       <aside
-        className={`
-          fixed lg:static inset-y-0 z-50
-          ${sidebarPosition === 'left' ? 'left-0' : 'right-0'}
-          flex ${sidebarPosition === 'left' ? 'flex-row' : 'flex-row-reverse'}
-          transition-transform duration-300 ease-in-out
-          ${isOpen ? 'translate-x-0' : sidebarPosition === 'left' ? '-translate-x-full lg:translate-x-0' : 'translate-x-full lg:translate-x-0'}
-        `}
+        className={[
+          'fixed lg:static inset-y-0 z-50 transition-transform duration-300 ease-in-out',
+          sidebarPosition === 'left' ? 'left-0' : 'right-0',
+          sidebarPosition === 'left' ? 'flex flex-row' : 'flex flex-row-reverse',
+          sidebarPosition === 'left'
+            ? isOpen
+              ? 'translate-x-0 lg:translate-x-0'
+              : '-translate-x-full lg:-translate-x-full'
+            : isOpen
+              ? 'translate-x-0 lg:translate-x-0'
+              : 'translate-x-full lg:translate-x-full',
+          isOpen ? 'lg:w-[23rem]' : 'lg:w-0',
+          isOpen ? 'lg:pointer-events-auto' : 'lg:pointer-events-none',
+          isOpen ? '' : 'lg:overflow-hidden'
+        ].join(' ')}
       >
         {/* 아이콘 네비게이션 바 */}
         <div className={`w-12 bg-gray-100 dark:bg-[#1e1e1e] flex flex-col items-center py-4 ${sidebarPosition === 'left' ? 'border-r' : 'border-l'} border-gray-200 dark:border-[#3e3e42]`}>

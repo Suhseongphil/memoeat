@@ -15,7 +15,7 @@ class CustomStorageAdapter {
       // Supabase auth token 키 패턴 찾기
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
       if (!supabaseUrl) return 'local' // 기본값
-
+      
       const projectRef = supabaseUrl.split('//')[1]?.split('.')[0]
       if (!projectRef) return 'local'
 
@@ -148,6 +148,23 @@ class CustomStorageAdapter {
     }
 
     return keys
+  }
+
+  /**
+   * Supabase 인증 관련 키를 모두 제거
+   */
+  clearAuthSession() {
+    const keys = this.getAllKeys()
+
+    keys.localStorage.forEach((key) => {
+      localStorage.removeItem(key)
+    })
+
+    keys.sessionStorage.forEach((key) => {
+      sessionStorage.removeItem(key)
+    })
+
+    console.log('CustomStorage: Cleared auth session from both storages')
   }
 }
 

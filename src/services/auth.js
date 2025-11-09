@@ -11,7 +11,10 @@ export const signUp = async (email, password) => {
     // 1. Supabase Auth에 사용자 등록
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
-      password
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/dashboard`
+      }
     })
 
     if (authError) throw authError
@@ -120,6 +123,8 @@ export const signIn = async (email, password, rememberMe = false) => {
 
     if (error.message.includes('Invalid login credentials')) {
       errorMessage = '이메일 또는 비밀번호가 올바르지 않습니다.'
+    } else if (error.message.includes('Email not confirmed')) {
+      errorMessage = '이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요.'
     } else if (error.message.includes('관리자 승인')) {
       errorMessage = error.message // 이미 한글 메시지
     } else if (error.message) {
@@ -193,12 +198,38 @@ export const getCurrentUser = async () => {
       error: null
     }
   } catch (error) {
-    console.error('❌ GetCurrentUser error:', error)
+    const errorMessage = error?.message || String(error)
+    const isSessionMissing =
+      errorMessage.includes('Auth session missing') ||
+      errorMessage.includes('Invalid Refresh Token') ||
+      errorMessage.includes('Refresh Token Not Found')
+
+    if (isSessionMissing) {
+      console.warn('[auth] Session expired. Clearing stored credentials.')
+      try {
+        await supabase.auth.signOut()
+      } catch (signOutError) {
+        console.warn('[auth] Sign out during session cleanup failed:', signOutError?.message || signOutError)
+      }
+
+      // 남아있는 스토리지 세션 제거
+      customStorage.clearAuthSession()
+
+      return {
+        user: null,
+        session: null,
+        isApproved: false,
+        error: null,
+        needsReauth: true
+      }
+    }
+
+    console.error('❌ GetCurrentUser error:', errorMessage)
     return {
       user: null,
       session: null,
       isApproved: false,
-      error: error.message
+      error: errorMessage
     }
   }
 }
