@@ -35,8 +35,6 @@ export const createNote = async (userId, noteData = {}) => {
       title: noteData.title || '제목 없음',
       content: noteData.content || '',
       folder_id: noteData.folder_id || null,
-      link_url: noteData.link_url || null,
-      link_type: noteData.link_type || null,
       is_favorite: noteData.is_favorite || false,
       order: noteData.order !== undefined ? noteData.order : maxOrder + 1,
       created_at: now,
