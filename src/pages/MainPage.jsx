@@ -69,9 +69,32 @@ function MainPage() {
   })
 
   // 열린 탭들의 실제 메모 객체 가져오기
-  const openedNotesData = openedNotes
-    .map((noteId) => notes.find((n) => n.id === noteId))
-    .filter(Boolean) // null/undefined 제거
+  // openedNotes의 순서를 유지하면서 notes에서 메모 객체를 찾음
+  // 중요: openedNotes 배열의 순서를 절대 변경하지 않음
+  const openedNotesData = useMemo(() => {
+    // notes를 Map으로 변환하여 O(1) 조회 성능 확보
+    const notesMap = new Map(notes.map(note => [note.id, note]))
+    
+    // openedNotes의 순서를 유지하면서 메모 객체 찾기
+    const result = openedNotes
+      .map((noteId) => notesMap.get(noteId))
+      .filter(Boolean) // null/undefined 제거
+    
+    // 디버깅: 순서 확인
+    if (openedNotes.length > 0 && result.length > 0) {
+      const resultIds = result.map(n => n.id)
+      const openedNotesIds = openedNotes.slice(0, result.length)
+      if (JSON.stringify(resultIds) !== JSON.stringify(openedNotesIds)) {
+        console.warn('⚠️ [openedNotesData] 순서 불일치 감지:', {
+          openedNotesIds,
+          resultIds,
+          notesLength: notes.length
+        })
+      }
+    }
+    
+    return result
+  }, [openedNotes, notes])
 
   // 현재 활성 탭의 메모
   const selectedNote = notes.find((n) => n.id === activeTabId) || null
@@ -317,11 +340,22 @@ function MainPage() {
 
   // 메모를 다른 폴더로 이동
   const handleMoveNote = async (noteId, targetFolderId) => {
+    console.log('📦 [handleMoveNote] 시작:', { noteId, targetFolderId, openedNotes })
+    
     const { note, error } = await updateNote(noteId, { folder_id: targetFolderId })
     if (error) {
       alert(`메모 이동 실패: ${error}`)
     } else {
-      queryClient.invalidateQueries(['notes'])
+      // 캐시를 직접 업데이트하여 탭 순서 유지
+      // invalidateQueries는 notes 배열을 완전히 다시 로드하면서 순서가 바뀔 수 있음
+      queryClient.setQueryData(['notes', user?.id], (oldNotes = []) => {
+        return oldNotes.map(n => n.id === noteId ? note : n)
+      })
+      
+      // 사이드바는 나중에 업데이트 (순서에 영향 없음)
+      setTimeout(() => {
+        queryClient.invalidateQueries(['notes'])
+      }, 100)
     }
   }
 
