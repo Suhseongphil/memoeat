@@ -14,13 +14,12 @@ import { TextStyle } from '@tiptap/extension-text-style'
 import { Link } from '@tiptap/extension-link'
 import { Underline } from '@tiptap/extension-underline'
 import { debounce } from 'lodash'
-import { toggleFavorite } from '../../services/notes'
 import { FontSize } from './extensions/FontSize'
 import { LineHeight } from './extensions/LineHeight'
 import './tiptap.css'
 import { showErrorToast } from '../../lib/toast.jsx'
 
-function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
+function Editor({ note, onUpdateNote, onSave, onDeleteNote, onRenameNote, onToggleFavorite }) {
   const [title, setTitle] = useState('')
   const [isFavorite, setIsFavorite] = useState(false)
   const [showTextColorPicker, setShowTextColorPicker] = useState(false)
@@ -274,6 +273,13 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
       })
 
       onUpdateNote({ title: newTitle })
+      
+      // Optimistic Update: 사이드바와 탭에 즉시 반영
+      if (onRenameNote) {
+        onRenameNote(note.id, newTitle)
+      }
+      
+      // 디바운스된 저장 (3초 후 API 호출)
       debouncedSave(note.id, { title: newTitle }, editStateRef.current)
     }
   }
@@ -292,22 +298,18 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote }) {
       isFavorite: newFavoriteState
     })
 
-    const { note: updatedNote, error } = await toggleFavorite(note.id)
-    if (error) {
-      setIsFavorite(!newFavoriteState)
-      // 편집 상태 복원
-      editStateRef.current.set(note.id, {
-        ...currentState,
-        isFavorite: !newFavoriteState
-      })
-      console.error('즐겨찾기 토글 실패:', error)
-    } else if (updatedNote) {
-      await onSave(note.id, { is_favorite: updatedNote.data.is_favorite })
-      // 저장 성공 시 편집 상태도 업데이트
-      editStateRef.current.set(note.id, {
-        ...currentState,
-        isFavorite: updatedNote.data.is_favorite
-      })
+    // Optimistic Update: 사이드바와 탭에 즉시 반영 + API 호출
+    if (onToggleFavorite) {
+      try {
+        await onToggleFavorite(note.id)
+      } catch (error) {
+        // 실패 시 롤백
+        setIsFavorite(!newFavoriteState)
+        editStateRef.current.set(note.id, {
+          ...currentState,
+          isFavorite: !newFavoriteState
+        })
+      }
     }
   }
 
