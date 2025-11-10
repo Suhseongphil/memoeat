@@ -558,9 +558,50 @@ function MainPage() {
     deleteNoteMutation.mutate(noteId)
   }, [deleteNoteMutation])
 
+  // Optimistic Update만 수행 (에디터에서 사용, 실제 저장은 debouncedSave에서 처리)
+  const handleRenameNoteOptimistic = useCallback((noteId, newTitle) => {
+    queryClient.setQueryData(['notes', user?.id], (oldNotes = []) => {
+      return oldNotes.map(n => {
+        if (n.id === noteId) {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              title: newTitle
+            }
+          }
+        }
+        return n
+      })
+    })
+  }, [queryClient, user?.id])
+
+  // Optimistic Update + API 호출 (사이드바에서 사용)
   const handleRenameNote = async (noteId, newTitle) => {
+    // Optimistic Update: UI를 먼저 업데이트
+    const previousNotes = queryClient.getQueryData(['notes', user?.id])
+    queryClient.setQueryData(['notes', user?.id], (oldNotes = []) => {
+      return oldNotes.map(n => {
+        if (n.id === noteId) {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              title: newTitle
+            }
+          }
+        }
+        return n
+      })
+    })
+
+    // API 호출
     const { note, error } = await updateNote(noteId, { title: newTitle })
     if (error) {
+      // 실패 시 롤백
+      if (previousNotes) {
+        queryClient.setQueryData(['notes', user?.id], previousNotes)
+      }
       if (error === 'NOTE_NOT_FOUND') {
         showErrorToast('해당 메모를 찾을 수 없습니다. 이미 삭제되었을 수 있습니다.')
         removeNoteFromTabs(noteId)
@@ -568,20 +609,41 @@ function MainPage() {
         showErrorToast(`제목 변경 실패: ${error}`)
       }
     } else {
-      // 캐시를 직접 업데이트하여 즉시 반영
+      // 성공 시 최신 데이터로 업데이트
       queryClient.setQueryData(['notes', user?.id], (oldNotes = []) => {
         return oldNotes.map(n => n.id === noteId ? note : n)
       })
-      // 사이드바는 나중에 업데이트
-      setTimeout(() => {
-        queryClient.invalidateQueries(['notes'])
-      }, 100)
     }
   }
 
   const handleToggleFavorite = async (noteId) => {
+    // Optimistic Update: UI를 먼저 업데이트
+    const previousNotes = queryClient.getQueryData(['notes', user?.id])
+    const currentNote = previousNotes?.find(n => n.id === noteId)
+    const newFavoriteState = currentNote ? !currentNote.data.is_favorite : false
+    
+    queryClient.setQueryData(['notes', user?.id], (oldNotes = []) => {
+      return oldNotes.map(n => {
+        if (n.id === noteId) {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              is_favorite: newFavoriteState
+            }
+          }
+        }
+        return n
+      })
+    })
+
+    // API 호출
     const { note, error } = await toggleFavorite(noteId)
     if (error) {
+      // 실패 시 롤백
+      if (previousNotes) {
+        queryClient.setQueryData(['notes', user?.id], previousNotes)
+      }
       if (error === 'NOTE_NOT_FOUND') {
         showErrorToast('해당 메모를 찾을 수 없습니다. 이미 삭제되었을 수 있습니다.')
         removeNoteFromTabs(noteId)
@@ -589,14 +651,10 @@ function MainPage() {
         showErrorToast(`즐겨찾기 변경 실패: ${error}`)
       }
     } else {
-      // 캐시를 직접 업데이트하여 즉시 반영
+      // 성공 시 최신 데이터로 업데이트
       queryClient.setQueryData(['notes', user?.id], (oldNotes = []) => {
         return oldNotes.map(n => n.id === noteId ? note : n)
       })
-      // 사이드바는 나중에 업데이트
-      setTimeout(() => {
-        queryClient.invalidateQueries(['notes'])
-      }, 100)
     }
   }
 
@@ -747,6 +805,8 @@ function MainPage() {
             onUpdateNote={handleUpdateNote}
             onSave={handleSaveNote}
             onDeleteNote={handleDeleteNote}
+            onRenameNote={handleRenameNoteOptimistic}
+            onToggleFavorite={handleToggleFavorite}
           />
         </div>
       </div>
