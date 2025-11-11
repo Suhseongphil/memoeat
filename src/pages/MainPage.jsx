@@ -198,7 +198,16 @@ function MainPage() {
   }, [openedNotes, notes])
 
   // 현재 활성 탭의 메모
-  const selectedNote = notes.find((n) => n.id === activeTabId) || null
+  // openedNotesData에서 먼저 찾고, 없으면 notes에서 찾기
+  // (새 메모 생성 직후 캐시 업데이트 타이밍 문제 해결)
+  const selectedNote = useMemo(() => {
+    if (!activeTabId) return null
+    // openedNotesData에서 찾기 (이미 openedNotes에 포함된 메모)
+    const noteInOpenedTabs = openedNotesData.find(n => n.id === activeTabId)
+    if (noteInOpenedTabs) return noteInOpenedTabs
+    // notes에서 찾기 (새로 생성된 메모가 아직 openedNotes에 없을 수 있음)
+    return notes.find((n) => n.id === activeTabId) || null
+  }, [activeTabId, openedNotesData, notes])
 
   // 새 메모 생성
   const createNoteMutation = useMutation({
@@ -211,10 +220,37 @@ function MainPage() {
       return note
     },
     onSuccess: (newNote) => {
-      queryClient.invalidateQueries(['notes'])
-      // 새 메모를 탭으로 열기
-      setOpenedNotes((prev) => [...prev, newNote.id])
+      // 1. 새 메모 객체에 deleted_at 필드 추가 (getNotes와 구조 일치)
+      const noteWithDeletedAt = {
+        ...newNote,
+        deleted_at: null // 새로 생성된 메모는 삭제되지 않음
+      }
+      
+      // 2. 새 메모를 캐시에 즉시 추가 (동기적으로 실행되어 notes가 즉시 업데이트됨)
+      // 기존 메모들 뒤에 추가하여 하단에 표시되도록 함
+      queryClient.setQueryData(['notes', user?.id], (oldNotes = []) => {
+        // 새 메모가 이미 있으면 제거 (중복 방지)
+        const filteredNotes = oldNotes.filter(n => n.id !== newNote.id)
+        // 새 메모를 맨 뒤에 추가 (하단에 배치)
+        return [...filteredNotes, noteWithDeletedAt]
+      })
+      
+      // 3. 새 메모를 탭으로 열기
+      setOpenedNotes((prev) => {
+        // 이미 열려있으면 추가하지 않음
+        if (prev.includes(newNote.id)) return prev
+        return [...prev, newNote.id]
+      })
+      
+      // 4. 새 메모를 활성 탭으로 설정
       setActiveTabId(newNote.id)
+      
+      // 5. invalidateQueries를 사용하지 않음
+      // 서버에서 데이터를 다시 가져오면 정렬 순서가 바뀔 수 있으므로
+      // 캐시에 추가한 데이터를 그대로 유지
+      // 새 메모의 order 값이 maxOrder + 1이므로 서버에도 올바르게 저장되어 있음
+      // 다른 동작(탭 전환 등)에서 invalidateQueries가 호출되어도
+      // 서버에서 가져온 데이터는 order 오름차순 정렬이므로 새 메모가 하단에 유지됨
     },
     onError: (error) => {
       showErrorToast(`메모 생성 실패: ${error.message}`)
@@ -510,27 +546,17 @@ function MainPage() {
   const handleNoteSelect = (noteId) => {
     // 이미 열려있는 탭이면 해당 탭으로 전환
     if (openedNotes.includes(noteId)) {
-      // 다른 탭으로 전환 시 현재 탭의 변경사항을 사이드바에 반영
-      if (activeTabId && activeTabId !== noteId) {
-        queryClient.invalidateQueries(['notes'])
-      }
+      // 탭 전환만 수행 (invalidateQueries 제거하여 정렬 순서 유지)
       setActiveTabId(noteId)
     } else {
       // 새 탭으로 열기
-      // 현재 활성 탭의 변경사항을 사이드바에 반영
-      if (activeTabId) {
-        queryClient.invalidateQueries(['notes'])
-      }
       setOpenedNotes((prev) => [...prev, noteId])
       setActiveTabId(noteId)
     }
   }
 
   const handleTabChange = (noteId) => {
-    // 탭 전환 시 현재 탭의 변경사항을 사이드바에 반영
-    if (activeTabId && activeTabId !== noteId) {
-      queryClient.invalidateQueries(['notes'])
-    }
+    // 탭 전환만 수행 (invalidateQueries 제거하여 정렬 순서 유지)
     setActiveTabId(noteId)
   }
 
@@ -550,8 +576,8 @@ function MainPage() {
       }
       return newOpenedNotes
     })
-    // 탭을 닫을 때 변경사항을 사이드바에 반영
-    queryClient.invalidateQueries(['notes'])
+    // 탭 닫기 시 invalidateQueries 제거 (정렬 순서 유지)
+    // 메모 삭제가 아니므로 사이드바 업데이트 불필요
   }
 
   const handleDeleteNote = useCallback((noteId) => {

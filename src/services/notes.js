@@ -10,11 +10,11 @@ export const createNote = async (userId, noteData = {}) => {
   try {
     const now = new Date().toISOString()
 
-    // 같은 폴더 내 메모들의 최대 order 값 찾기 (직접 쿼리)
+    // 같은 폴더 내 메모들의 order 값 찾기 (직접 쿼리)
     const folderId = noteData.folder_id || null
     let query = supabase
       .from('notes')
-      .select('data')
+      .select('id, data')
       .eq('user_id', userId)
       .is('deleted_at', null)
 
@@ -27,16 +27,21 @@ export const createNote = async (userId, noteData = {}) => {
     const { data: existingNotes, error: queryError } = await query
     if (queryError) throw queryError
 
-    const maxOrder = existingNotes && existingNotes.length > 0
-      ? Math.max(...existingNotes.map(n => n.data?.order || 0))
-      : -1
+    // 새 메모를 가장 하단에 배치: 기존 메모들의 최대 order 값보다 큰 값으로 설정
+    let newOrder = 0
+    if (existingNotes && existingNotes.length > 0) {
+      const orders = existingNotes.map(n => n.data?.order ?? 0)
+      const maxOrder = Math.max(...orders)
+      // 최대 order보다 1 큰 값으로 설정 (하단에 배치)
+      newOrder = maxOrder + 1
+    }
 
     const data = {
       title: noteData.title || '제목 없음',
       content: noteData.content || '',
       folder_id: noteData.folder_id || null,
       is_favorite: noteData.is_favorite || false,
-      order: noteData.order !== undefined ? noteData.order : maxOrder + 1,
+      order: noteData.order !== undefined ? noteData.order : newOrder,
       created_at: now,
       updated_at: now
     }
