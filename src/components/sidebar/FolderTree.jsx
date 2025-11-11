@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect, memo, useMemo } from 'react'
+import { useState, useRef, memo, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { NoteItemSimple, currentDraggedItem, setCurrentDraggedItem } from './NoteList'
+import { NoteItemSimple } from './NoteList'
 
 const FolderItem = memo(function FolderItem({
   folder,
@@ -22,7 +22,6 @@ const FolderItem = memo(function FolderItem({
   level = 0
 }) {
   const [isExpanded, setIsExpanded] = useState(() => {
-    // localStorage에서 확장 상태 복원
     const saved = localStorage.getItem(`folder-expanded-${folder.id}`)
     return saved ? JSON.parse(saved) : true
   })
@@ -31,7 +30,6 @@ const FolderItem = memo(function FolderItem({
   const [showMenu, setShowMenu] = useState(false)
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
   const [isDragging, setIsDragging] = useState(false)
-  const [isOver, setIsOver] = useState(false)
   const [dropPosition, setDropPosition] = useState(null) // 'before' | 'after' | 'inside' | null
   const menuRef = useRef(null)
   const buttonRef = useRef(null)
@@ -45,7 +43,7 @@ const FolderItem = memo(function FolderItem({
     return notes.filter(note => note.data.folder_id === folder.id)
   }, [notes, folder.id])
 
-  // HTML5 Drag & Drop - 드래그 시작
+  // 드래그 시작
   const handleDragStart = (e) => {
     if (isEditing) {
       e.preventDefault()
@@ -57,43 +55,47 @@ const FolderItem = memo(function FolderItem({
     const dragData = {
       type: 'FOLDER',
       id: folder.id,
-      data: folder.data
+      parent_id: folder.data.parent_id
     }
 
-    setCurrentDraggedItem(dragData)
     e.dataTransfer.setData('application/json', JSON.stringify(dragData))
     e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setDragImage(e.currentTarget, 20, 20)
+    
+    // 드래그 오버 이벤트에서도 사용할 수 있도록 window에 임시 저장
+    window.__dragData = dragData
   }
 
-  // HTML5 Drag & Drop - 드래그 종료
-  const handleDragEnd = (e) => {
+  // 드래그 종료
+  const handleDragEnd = () => {
     setIsDragging(false)
-    setCurrentDraggedItem(null)
+    setDropPosition(null)
+    // 임시 데이터 정리 (어디서 끝나든 정리)
+    window.__dragData = null
   }
 
-  // HTML5 Drag & Drop - 드래그 오버
+  // 드래그 오버
   const handleDragOver = (e) => {
     e.preventDefault()
     e.stopPropagation()
 
-    const item = currentDraggedItem
-
+    // 드래그 오버에서는 getData를 사용할 수 없으므로 window 객체에서 데이터 가져오기
+    const item = window.__dragData
+    
     if (!item) {
-      e.dataTransfer.dropEffect = 'move'
-      setIsOver(true)
-      setDropPosition('inside')
-      return
-    }
-
-    if (item.type === 'FOLDER' && item.id === folder.id) {
       e.dataTransfer.dropEffect = 'none'
-      setIsOver(false)
       setDropPosition(null)
       return
     }
 
-    if (item.type === 'FOLDER' && item.data.parent_id === folder.data.parent_id) {
+    // 자기 자신으로는 드롭 불가
+    if (item.type === 'FOLDER' && item.id === folder.id) {
+      e.dataTransfer.dropEffect = 'none'
+      setDropPosition(null)
+      return
+    }
+
+    // 같은 부모를 가진 폴더끼리는 순서 변경 (before/after)
+    if (item.type === 'FOLDER' && item.parent_id === folder.data.parent_id) {
       const rect = e.currentTarget.getBoundingClientRect()
       const relativeY = e.clientY - rect.top
       const height = rect.height
@@ -108,91 +110,102 @@ const FolderItem = memo(function FolderItem({
       }
 
       setDropPosition(position)
-      setIsOver(position === 'inside')
       e.dataTransfer.dropEffect = 'move'
       return
     }
 
+    // 메모를 폴더로 이동
     if (item.type === 'NOTE') {
       const note = notes.find(n => n.id === item.id)
+      // 이미 이 폴더에 있으면 드롭 불가
       if (note && note.data.folder_id === folder.id) {
         e.dataTransfer.dropEffect = 'none'
-        setIsOver(false)
         setDropPosition(null)
         return
       }
+      setDropPosition('inside')
+      e.dataTransfer.dropEffect = 'move'
+      return
     }
+
+    // 폴더를 다른 폴더로 이동
     if (item.type === 'FOLDER') {
-      if (item.data.parent_id === folder.id) {
+      // 이미 이 폴더의 자식이면 드롭 불가
+      if (item.parent_id === folder.id) {
         e.dataTransfer.dropEffect = 'none'
-        setIsOver(false)
         setDropPosition(null)
         return
       }
+      setDropPosition('inside')
+      e.dataTransfer.dropEffect = 'move'
+      return
     }
 
-    setIsOver(true)
-    setDropPosition('inside')
-    e.dataTransfer.dropEffect = 'move'
+    e.dataTransfer.dropEffect = 'none'
+    setDropPosition(null)
   }
 
-  // HTML5 Drag & Drop - 드래그 진입
-  const handleDragEnter = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsOver(true)
-  }
-
-  // HTML5 Drag & Drop - 드래그 나감
+  // 드래그 나감
   const handleDragLeave = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
     if (e.currentTarget.contains(e.relatedTarget)) {
       return
     }
-    setIsOver(false)
     setDropPosition(null)
   }
 
-  // HTML5 Drag & Drop - 드롭
+  // 드롭
   const handleDrop = (e) => {
     e.preventDefault()
     e.stopPropagation()
-
     const position = dropPosition
-    setIsOver(false)
     setDropPosition(null)
 
-    if (!position) {
-      return
-    }
-
     try {
+      // 드롭 이벤트에서는 getData 사용 가능
       const data = e.dataTransfer.getData('application/json')
-      if (!data) {
-        return
+      let item
+      
+      if (data) {
+        item = JSON.parse(data)
+      } else {
+        // getData가 실패한 경우 window 객체에서 가져오기
+        item = window.__dragData
       }
+      
+      if (!item) return
 
-      const item = JSON.parse(data)
-
-      if (item.type === 'FOLDER' && item.data.parent_id === folder.data.parent_id && position && position !== 'inside') {
+      // 같은 부모를 가진 폴더끼리 순서 변경
+      if (item.type === 'FOLDER' && item.parent_id === folder.data.parent_id && position && position !== 'inside') {
         if (item.id !== folder.id) {
           onReorderFolder?.(item.id, folder.id, position)
         }
+        window.__dragData = null
         return
       }
 
-      if (item.type === 'NOTE') {
-        if (item.data.folder_id !== folder.id) {
+      // 메모를 폴더로 이동
+      if (item.type === 'NOTE' && position === 'inside') {
+        const note = notes.find(n => n.id === item.id)
+        if (note && note.data.folder_id !== folder.id) {
           onMoveNote(item.id, folder.id)
         }
-      } else if (item.type === 'FOLDER') {
-        if (item.id !== folder.id && item.data.parent_id !== folder.id) {
+        window.__dragData = null
+        return
+      }
+
+      // 폴더를 다른 폴더로 이동
+      if (item.type === 'FOLDER' && position === 'inside') {
+        if (item.id !== folder.id && item.parent_id !== folder.id) {
           onMoveFolder(item.id, folder.id)
         }
+        window.__dragData = null
+        return
       }
+      
+      window.__dragData = null
     } catch (err) {
-      console.error('❌ [FolderItem] 드롭 처리 오류:', err)
+      console.error('드롭 처리 오류:', err)
+      window.__dragData = null
     }
   }
 
@@ -204,46 +217,33 @@ const FolderItem = memo(function FolderItem({
     localStorage.setItem(`folder-expanded-${folder.id}`, JSON.stringify(newExpanded))
   }
 
-  // 폴더 클릭 (확장/축소만)
+  // 폴더 클릭
   const handleClick = (e) => {
     if (isEditing) return
     toggleExpand(e)
   }
 
-  // 메뉴 위치 계산 및 열기 공통 로직
+  // 메뉴 위치 계산 및 열기
   const openMenu = (clientX, clientY) => {
-    const menuWidth = 192 // w-48 = 192px
-    const menuHeight = 150 // 대략적인 메뉴 높이
+    const menuWidth = 192
+    const menuHeight = 150
 
-    // 화면 경계 체크
     let top = clientY
     let left = clientX
 
-    // 화면 아래로 넘어가면 위로 표시
     if (top + menuHeight > window.innerHeight) {
       top = clientY - menuHeight
     }
-
-    // 화면 오른쪽으로 넘어가면 왼쪽 정렬
     if (left + menuWidth > window.innerWidth) {
       left = clientX - menuWidth
     }
-
-    // 화면 왼쪽으로 넘어가면 오른쪽 정렬
-    if (left < 0) {
-      left = 8
-    }
-
-    // 화면 위로 넘어가면 아래로 조정
-    if (top < 0) {
-      top = 8
-    }
+    if (left < 0) left = 8
+    if (top < 0) top = 8
 
     setMenuPosition({ top, left })
     setShowMenu(true)
   }
 
-  // ... 버튼 클릭으로 메뉴 토글
   const handleMenuToggle = (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -253,32 +253,24 @@ const FolderItem = memo(function FolderItem({
       return
     }
 
-    if (!buttonRef.current) {
-      return
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      openMenu(rect.right, rect.bottom + 4)
     }
-
-    const rect = buttonRef.current.getBoundingClientRect()
-    openMenu(rect.right, rect.bottom + 4)
   }
 
-  // 우클릭으로 메뉴 열기
   const handleContextMenu = (e) => {
     e.preventDefault()
     e.stopPropagation()
-
     openMenu(e.clientX, e.clientY)
   }
 
-  // 외부 클릭은 오버레이로 처리하므로 별도 useEffect 불필요
-
-  // 이름 변경 시작
   const startRename = () => {
     setIsEditing(true)
     setShowMenu(false)
     setTimeout(() => inputRef.current?.focus(), 0)
   }
 
-  // 이름 변경 완료
   const handleRename = () => {
     if (editName.trim() && editName !== folder.data.name) {
       onRenameFolder(folder.id, editName.trim())
@@ -288,7 +280,6 @@ const FolderItem = memo(function FolderItem({
     setIsEditing(false)
   }
 
-  // 이름 변경 취소
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       handleRename()
@@ -298,13 +289,11 @@ const FolderItem = memo(function FolderItem({
     }
   }
 
-  // 폴더 삭제
   const handleDelete = () => {
     onDeleteFolder(folder.id)
     setShowMenu(false)
   }
 
-  // 하위 폴더 생성
   const handleCreateSubfolder = () => {
     onCreateSubfolder(folder.id)
     setIsExpanded(true)
@@ -316,13 +305,7 @@ const FolderItem = memo(function FolderItem({
       {/* 상단 드롭 인디케이터 */}
       {dropPosition === 'before' && (
         <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
-          <div className="h-1 bg-amber-500 dark:bg-[#569cd6] animate-pulse shadow-lg" />
-          <div className="absolute top-0 left-0 right-0 h-8 bg-amber-100 dark:bg-[#1e1e1e]/40 opacity-60 -translate-y-1/2" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div className="px-3 py-1 bg-amber-500 dark:bg-[#569cd6] text-white text-xs font-semibold rounded-full shadow-lg whitespace-nowrap">
-              ↑ 위에 놓기
-            </div>
-          </div>
+          <div className="h-1 bg-amber-500 dark:bg-[#569cd6] animate-pulse" />
         </div>
       )}
 
@@ -332,7 +315,6 @@ const FolderItem = memo(function FolderItem({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragOver={handleDragOver}
-        onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onContextMenu={handleContextMenu}
@@ -398,7 +380,7 @@ const FolderItem = memo(function FolderItem({
           </span>
         )}
 
-        {/* ... 메뉴 버튼 (hover 시 표시) */}
+        {/* 메뉴 버튼 */}
         {!isEditing && (
           <button
             ref={buttonRef}
@@ -413,10 +395,9 @@ const FolderItem = memo(function FolderItem({
           </button>
         )}
 
-        {/* 드롭다운 메뉴 - Portal로 body에 직접 렌더링 */}
+        {/* 드롭다운 메뉴 */}
         {showMenu && createPortal(
           <>
-            {/* 투명 오버레이 - 뒤의 요소들과 메뉴 분리 */}
             <div
               className="fixed inset-0 z-[9998]"
               onClick={(e) => {
@@ -527,13 +508,7 @@ const FolderItem = memo(function FolderItem({
       {/* 하단 드롭 인디케이터 */}
       {dropPosition === 'after' && (
         <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
-          <div className="h-1 bg-amber-500 dark:bg-[#569cd6] animate-pulse shadow-lg" />
-          <div className="absolute bottom-0 left-0 right-0 h-8 bg-amber-100 dark:bg-[#1e1e1e]/40 opacity-60 translate-y-1/2" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
-            <div className="px-3 py-1 bg-amber-500 dark:bg-[#569cd6] text-white text-xs font-semibold rounded-full shadow-lg whitespace-nowrap">
-              ↓ 아래에 놓기
-            </div>
-          </div>
+          <div className="h-1 bg-amber-500 dark:bg-[#569cd6] animate-pulse" />
         </div>
       )}
     </div>

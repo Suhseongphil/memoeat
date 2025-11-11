@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import FolderTree from './FolderTree'
-import { NoteItemSimple, currentDraggedItem } from './NoteList'
+import { NoteItemSimple } from './NoteList'
 import SearchPanel from './SearchPanel'
 import FavoritesPanel from './FavoritesPanel'
 import TrashPanel from './TrashPanel'
@@ -9,73 +9,81 @@ import TrashPanel from './TrashPanel'
 // 루트 드롭존 컴포넌트
 function RootDropZone({ userName, onDrop, notes, onNewFolder }) {
   const [isOver, setIsOver] = useState(false)
-  const [canDrop, setCanDrop] = useState(false)
 
-  // HTML5 Drag & Drop - 드래그 오버
+  // 드래그 오버
   const handleDragOver = (e) => {
     e.preventDefault()
     e.stopPropagation()
 
-    // 전역 변수에서 드래그 중인 아이템 가져오기
-    const item = currentDraggedItem
-
+    // 드래그 오버에서는 getData를 사용할 수 없으므로 window 객체에서 데이터 가져오기
+    const item = window.__dragData
+    
     if (!item) {
-      e.dataTransfer.dropEffect = 'move'
-      setCanDrop(true)
+      e.dataTransfer.dropEffect = 'none'
       return
     }
 
     // 이미 메인 폴더에 있는 항목은 드롭 불가
-    let canDropItem = true
     if (item.type === 'NOTE') {
       const note = notes.find(n => n.id === item.id)
-      canDropItem = note && note.data.folder_id !== null
+      if (note && note.data.folder_id === null) {
+        e.dataTransfer.dropEffect = 'none'
+        return
+      }
     }
     if (item.type === 'FOLDER') {
-      canDropItem = item.data.parent_id !== null
+      if (item.parent_id === null) {
+        e.dataTransfer.dropEffect = 'none'
+        return
+      }
     }
 
-    setCanDrop(canDropItem)
-    e.dataTransfer.dropEffect = canDropItem ? 'move' : 'none'
+    e.dataTransfer.dropEffect = 'move'
   }
 
-  // HTML5 Drag & Drop - 드래그 진입
+  // 드래그 진입
   const handleDragEnter = (e) => {
     e.preventDefault()
     e.stopPropagation()
     setIsOver(true)
   }
 
-  // HTML5 Drag & Drop - 드래그 나감
+  // 드래그 나감
   const handleDragLeave = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
     if (e.currentTarget.contains(e.relatedTarget)) {
       return
     }
     setIsOver(false)
-    setCanDrop(false)
   }
 
-  // HTML5 Drag & Drop - 드롭
+  // 드롭
   const handleDrop = (e) => {
     e.preventDefault()
     e.stopPropagation()
     setIsOver(false)
-    setCanDrop(false)
 
     try {
+      // 드롭 이벤트에서는 getData 사용 가능
       const data = e.dataTransfer.getData('application/json')
-      if (!data) return
+      if (!data) {
+        // getData가 실패한 경우 window 객체에서 가져오기
+        const item = window.__dragData
+        if (item) {
+          onDrop(item)
+          window.__dragData = null
+        }
+        return
+      }
 
       const item = JSON.parse(data)
       onDrop(item)
+      // 임시 데이터 정리
+      window.__dragData = null
     } catch (err) {
       console.error('루트 드롭 처리 오류:', err)
+      window.__dragData = null
     }
   }
-
-  const isActive = isOver && canDrop
 
   return (
     <div className="p-4 pb-3 group">
@@ -85,10 +93,8 @@ function RootDropZone({ userName, onDrop, notes, onNewFolder }) {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`flex items-center px-5 py-4 text-base font-bold rounded-xl transition-all duration-200 ${
-          isActive
+          isOver
             ? 'ring-4 ring-amber-500 dark:ring-[#569cd6] bg-amber-100 dark:bg-[#1e1e1e] scale-[1.05] shadow-2xl'
-            : canDrop
-            ? 'ring-2 ring-amber-300 dark:ring-[#569cd6] bg-amber-50 dark:bg-[#1e1e1e]'
             : 'bg-gray-100 dark:bg-[#2d2d30] hover:bg-gray-200 dark:hover:bg-[#2d2d30]'
         } text-gray-800 dark:text-[#cccccc] cursor-pointer`}
         style={{
@@ -97,7 +103,7 @@ function RootDropZone({ userName, onDrop, notes, onNewFolder }) {
       >
         <svg
           className={`w-6 h-6 mr-3 transition-all duration-200 ${
-            isActive ? 'text-amber-600 dark:text-[#569cd6] scale-110' : 'text-gray-600 dark:text-[#9d9d9d]'
+            isOver ? 'text-amber-600 dark:text-[#569cd6] scale-110' : 'text-gray-600 dark:text-[#9d9d9d]'
           }`}
           fill="currentColor"
           viewBox="0 0 20 20"
@@ -107,7 +113,7 @@ function RootDropZone({ userName, onDrop, notes, onNewFolder }) {
         <span className="flex-1 text-base">{userName}</span>
 
         {/* 새 폴더 추가 버튼 */}
-        {!isActive && (
+        {!isOver && (
           <button
             onClick={(e) => {
               e.stopPropagation()
@@ -127,7 +133,7 @@ function RootDropZone({ userName, onDrop, notes, onNewFolder }) {
           </button>
         )}
 
-        {isActive && (
+        {isOver && (
           <svg
             className="w-5 h-5 text-amber-600 dark:text-[#569cd6] animate-bounce"
             fill="none"
@@ -140,16 +146,9 @@ function RootDropZone({ userName, onDrop, notes, onNewFolder }) {
       </div>
 
       {/* 드롭존 설명 텍스트 */}
-      {isActive && (
+      {isOver && (
         <div className="mt-3 mx-2 px-3 py-2 bg-amber-50 dark:bg-[#1e1e1e] border border-amber-300 dark:border-[#569cd6] rounded-lg text-sm text-amber-700 dark:text-[#569cd6] font-semibold text-center animate-pulse">
           ↓ 메인 폴더로 이동 ↓
-        </div>
-      )}
-
-      {/* 드래그 가능할 때 힌트 표시 */}
-      {canDrop && !isActive && (
-        <div className="mt-2 px-3 text-xs text-gray-500 dark:text-[#9d9d9d] text-center">
-          💡 {userName} 폴더로 드래그하면 메인 폴더로 이동
         </div>
       )}
     </div>
@@ -188,40 +187,33 @@ function SidebarContent({
   isTrashLoading,
   isTrashProcessing
 }) {
-  // 현재 활성 패널 ('explorer' | 'favorites' | 'search')
   const [activePanel, setActivePanel] = useState('explorer')
   const trashCount = (trashedNotes?.length || 0) + (trashedFolders?.length || 0)
   const scrollContainerRef = useRef(null)
   
-  // 선택된 메모가 변경되면 해당 메모로 스크롤 (explorer 패널일 때만)
+  // 선택된 메모가 변경되면 해당 메모로 스크롤
   useEffect(() => {
     if (activePanel === 'explorer' && selectedNoteId && scrollContainerRef.current) {
-      // 약간의 지연을 두어 DOM 업데이트 후 스크롤
       const timer = setTimeout(() => {
         const noteElement = scrollContainerRef.current?.querySelector(
           `[data-note-id="${selectedNoteId}"]`
         )
         if (noteElement) {
-          // 메모 요소를 찾았으면 해당 위치로 스크롤
           noteElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
         } else {
-          // 메모 요소를 찾지 못한 경우 (폴더 내에 있거나 아직 렌더링되지 않음)
-          // 새 메모는 상단에 생성되므로 상단으로 스크롤
-          // notes 배열에서 해당 메모를 찾아서 루트 레벨인지 확인
           const note = notes.find(n => n.id === selectedNoteId)
           if (note && !note.data.folder_id) {
-            // 루트 레벨 메모인데 요소를 찾지 못한 경우, 상단으로 스크롤
             scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
           }
         }
-      }, 150) // DOM 업데이트를 위해 지연 시간을 약간 늘림
+      }, 150)
       
       return () => clearTimeout(timer)
     }
   }, [selectedNoteId, activePanel, notes])
+
   const handleNoteSelect = (noteId) => {
     onNoteSelect(noteId)
-    // 모바일에서는 메모 선택 후 사이드바 닫기
     if (window.innerWidth < 1024) {
       onClose?.()
     }
@@ -229,7 +221,6 @@ function SidebarContent({
 
   const handleNewNote = () => {
     onNewNote()
-    // 모바일에서는 새 메모 생성 후 사이드바 닫기
     if (window.innerWidth < 1024) {
       onClose?.()
     }
@@ -250,8 +241,7 @@ function SidebarContent({
 
   // 사이드바 빈 공간 우클릭
   const handleSidebarContextMenu = (e) => {
-    // 폴더나 메모 항목이 아닌 경우에만 처리
-    if (e.target.closest('[data-folder-item]') || e.target.closest('[data-note-item]')) {
+    if (e.target.closest('[data-folder-item]') || e.target.closest('[data-note-id]')) {
       return
     }
 
@@ -264,7 +254,6 @@ function SidebarContent({
     let top = e.clientY
     let left = e.clientX
 
-    // 화면 경계 체크
     if (top + menuHeight > window.innerHeight) {
       top = e.clientY - menuHeight
     }
@@ -282,7 +271,6 @@ function SidebarContent({
     setShowContextMenu(true)
   }
 
-  // 새 폴더 생성
   const handleCreateFolder = () => {
     onNewFolder(null)
     setShowContextMenu(false)
@@ -538,7 +526,7 @@ function SidebarContent({
             </svg>
           </button>
 
-        {/* 검색 아이콘 */}
+          {/* 검색 아이콘 */}
           <button
             onClick={() => setActivePanel('search')}
             className={`
@@ -599,10 +587,9 @@ function SidebarContent({
         </div>
       </aside>
 
-      {/* 사이드바 우클릭 메뉴 - Portal로 body에 직접 렌더링 */}
+      {/* 사이드바 우클릭 메뉴 */}
       {showContextMenu && createPortal(
         <>
-          {/* 투명 오버레이 */}
           <div
             className="fixed inset-0 z-[9998]"
             onClick={(e) => {
