@@ -191,6 +191,34 @@ function SidebarContent({
   // 현재 활성 패널 ('explorer' | 'favorites' | 'search')
   const [activePanel, setActivePanel] = useState('explorer')
   const trashCount = (trashedNotes?.length || 0) + (trashedFolders?.length || 0)
+  const scrollContainerRef = useRef(null)
+  
+  // 선택된 메모가 변경되면 해당 메모로 스크롤 (explorer 패널일 때만)
+  useEffect(() => {
+    if (activePanel === 'explorer' && selectedNoteId && scrollContainerRef.current) {
+      // 약간의 지연을 두어 DOM 업데이트 후 스크롤
+      const timer = setTimeout(() => {
+        const noteElement = scrollContainerRef.current?.querySelector(
+          `[data-note-id="${selectedNoteId}"]`
+        )
+        if (noteElement) {
+          // 메모 요소를 찾았으면 해당 위치로 스크롤
+          noteElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        } else {
+          // 메모 요소를 찾지 못한 경우 (폴더 내에 있거나 아직 렌더링되지 않음)
+          // 새 메모는 상단에 생성되므로 상단으로 스크롤
+          // notes 배열에서 해당 메모를 찾아서 루트 레벨인지 확인
+          const note = notes.find(n => n.id === selectedNoteId)
+          if (note && !note.data.folder_id) {
+            // 루트 레벨 메모인데 요소를 찾지 못한 경우, 상단으로 스크롤
+            scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+          }
+        }
+      }, 150) // DOM 업데이트를 위해 지연 시간을 약간 늘림
+      
+      return () => clearTimeout(timer)
+    }
+  }, [selectedNoteId, activePanel, notes])
   const handleNoteSelect = (noteId) => {
     onNoteSelect(noteId)
     // 모바일에서는 메모 선택 후 사이드바 닫기
@@ -332,6 +360,7 @@ function SidebarContent({
 
         {/* 폴더 트리 + 메모 리스트 - 스크롤 영역 */}
         <div
+          ref={scrollContainerRef}
           className="flex-1 overflow-y-auto relative custom-scrollbar"
           onContextMenu={handleSidebarContextMenu}
         >

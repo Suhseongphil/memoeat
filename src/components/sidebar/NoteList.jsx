@@ -9,6 +9,21 @@ export const setCurrentDraggedItem = (item) => {
   currentDraggedItem = item
 }
 
+// 전역 터치 위치 저장 (모바일 드래그 앤 드롭용)
+let globalTouchPosition = null
+
+export const setGlobalTouchPosition = (x, y) => {
+  globalTouchPosition = { x, y }
+}
+
+export const getGlobalTouchPosition = () => {
+  return globalTouchPosition
+}
+
+export const clearGlobalTouchPosition = () => {
+  globalTouchPosition = null
+}
+
 // 간단한 메모 아이템 컴포넌트 (VSCode 탐색기 스타일)
 export const NoteItemSimple = memo(function NoteItemSimple({ note, selectedNoteId, onNoteSelect, onDeleteNote, onRenameNote, onToggleFavorite, onMoveNote, onReorderNote, level }) {
   const noteData = note.data
@@ -19,9 +34,13 @@ export const NoteItemSimple = memo(function NoteItemSimple({ note, selectedNoteI
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [dropPosition, setDropPosition] = useState(null) // 'before' | 'after' | null
+  const [isTouchDragging, setIsTouchDragging] = useState(false) // 터치 드래그 상태
   const menuRef = useRef(null)
   const buttonRef = useRef(null)
   const inputRef = useRef(null)
+  const touchStartRef = useRef(null)
+  const longPressTimerRef = useRef(null)
+  const elementRef = useRef(null)
 
   // 메뉴 위치 계산 및 열기 공통 로직
   const openMenu = (clientX, clientY) => {
@@ -209,9 +228,210 @@ export const NoteItemSimple = memo(function NoteItemSimple({ note, selectedNoteI
 
   // 클릭 핸들러
   const handleClick = (e) => {
+    // 터치 드래그가 활성화된 경우 클릭 무시
+    if (isTouchDragging) {
+      return
+    }
     if (!isEditing && !isDragging) {
       onNoteSelect(note.id)
     }
+  }
+
+  // 터치 시작 (모바일)
+  const handleTouchStart = (e) => {
+    if (isEditing) {
+      return
+    }
+
+    const touch = e.touches[0]
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now(),
+      isDragging: false
+    }
+
+    // 롱프레스 감지 (500ms)
+    longPressTimerRef.current = setTimeout(() => {
+      if (touchStartRef.current) {
+        touchStartRef.current.isDragging = true
+        setIsDragging(true)
+        setIsTouchDragging(true)
+
+        const dragData = {
+          type: 'NOTE',
+          id: note.id,
+          data: noteData
+        }
+
+        setCurrentDraggedItem(dragData)
+        
+        // 햅틱 피드백 (지원하는 경우)
+        if (navigator.vibrate) {
+          navigator.vibrate(50)
+        }
+      }
+    }, 500)
+  }
+
+  // 전역 터치 이동 이벤트 처리 (드롭 포지션 표시)
+  useEffect(() => {
+    const handleGlobalTouchMove = (e) => {
+      // currentDraggedItem이 모듈 변수이므로 직접 체크
+      const item = currentDraggedItem
+      
+      // 드래그 중인 아이템이 없거나 현재 메모가 드래그 중인 경우 제외
+      if (!item || item.id === note.id || item.type !== 'NOTE') {
+        setDropPosition(null)
+        return
+      }
+
+      // 같은 폴더에 있는 메모끼리만 순서 변경 가능
+      if (item.data.folder_id === noteData.folder_id && elementRef.current) {
+        const touch = e.touches?.[0]
+        if (touch) {
+          // 전역 터치 위치 저장
+          setGlobalTouchPosition(touch.clientX, touch.clientY)
+          
+          const rect = elementRef.current.getBoundingClientRect()
+          const touchY = touch.clientY
+
+          // 터치가 현재 요소 위에 있는지 확인
+          if (touchY >= rect.top && touchY <= rect.bottom) {
+            const relativeY = touchY - rect.top
+            const height = rect.height
+            const position = relativeY < height / 2 ? 'before' : 'after'
+            setDropPosition(position)
+          } else {
+            setDropPosition(null)
+          }
+        }
+      } else {
+        setDropPosition(null)
+      }
+    }
+
+    // 항상 이벤트 리스너 추가 (currentDraggedItem은 내부에서 체크)
+    document.addEventListener('touchmove', handleGlobalTouchMove, { passive: true })
+
+    return () => {
+      document.removeEventListener('touchmove', handleGlobalTouchMove)
+    }
+  }, [note.id, noteData.folder_id])
+
+  // 터치 이동 (모바일) - 로컬 처리
+  const handleTouchMove = (e) => {
+    if (!touchStartRef.current) return
+
+    const touch = e.touches[0]
+    const deltaX = Math.abs(touch.clientX - touchStartRef.current.x)
+    const deltaY = Math.abs(touch.clientY - touchStartRef.current.y)
+
+    // 최소 이동 거리 체크 (10px)
+    if (deltaX > 10 || deltaY > 10) {
+      // 롱프레스 타이머 취소
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current)
+        longPressTimerRef.current = null
+      }
+
+      // 드래그 중인 경우
+      if (touchStartRef.current.isDragging) {
+        e.preventDefault()
+        e.stopPropagation()
+        
+        // 마지막 터치 위치 저장
+        touchStartRef.current.lastX = touch.clientX
+        touchStartRef.current.lastY = touch.clientY
+      } else {
+        // 작은 이동이면 롱프레스 취소
+        if (deltaX > 5 || deltaY > 5) {
+          touchStartRef.current = null
+        }
+      }
+    }
+  }
+
+  // 터치 종료 (모바일)
+  const handleTouchEnd = (e) => {
+    // 롱프레스 타이머 취소
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+
+    // touchStartRef가 없으면 이 컴포넌트에서 시작한 드래그가 아님
+    // 드롭 포지션이 설정되어 있으면 드롭 처리 (다른 메모에서 드래그한 경우)
+    if (!touchStartRef.current) {
+      const item = currentDraggedItem
+      if (item && item.type === 'NOTE' && item.id !== note.id && dropPosition) {
+        // 같은 폴더에 있는 메모끼리만 순서 변경
+        if (item.data.folder_id === noteData.folder_id) {
+          onReorderNote?.(item.id, note.id, dropPosition)
+        }
+      }
+      setDropPosition(null)
+      clearGlobalTouchPosition()
+      return
+    }
+
+    // 드래그 중이었던 경우
+    if (touchStartRef.current.isDragging) {
+      e.preventDefault()
+      e.stopPropagation()
+
+      // 전역 터치 위치 또는 마지막 터치 위치 사용
+      const globalPos = getGlobalTouchPosition()
+      const touch = e.changedTouches[0]
+      const touchX = globalPos?.x ?? touchStartRef.current.lastX ?? touch.clientX
+      const touchY = globalPos?.y ?? touchStartRef.current.lastY ?? touch.clientY
+      
+      // 터치 종료 위치에서 요소 찾기
+      const elementBelow = document.elementFromPoint(touchX, touchY)
+      if (elementBelow) {
+        const noteElement = elementBelow.closest('[data-note-id]')
+        if (noteElement) {
+          const targetNoteId = noteElement.getAttribute('data-note-id')
+          if (targetNoteId && targetNoteId !== note.id) {
+            const rect = noteElement.getBoundingClientRect()
+            const relativeY = touchY - rect.top
+            const height = rect.height
+            
+            const position = relativeY < height / 2 ? 'before' : 'after'
+            
+            // 드롭 처리
+            const item = currentDraggedItem
+            if (item && item.type === 'NOTE' && item.data.folder_id === noteData.folder_id) {
+              onReorderNote?.(item.id, targetNoteId, position)
+            }
+          }
+        }
+      }
+
+      setIsDragging(false)
+      setIsTouchDragging(false)
+      setCurrentDraggedItem(null)
+      clearGlobalTouchPosition()
+    }
+
+    touchStartRef.current = null
+    setDropPosition(null)
+  }
+
+  // 터치 취소 (모바일)
+  const handleTouchCancel = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+    if (touchStartRef.current?.isDragging) {
+      setIsDragging(false)
+      setIsTouchDragging(false)
+      setCurrentDraggedItem(null)
+      clearGlobalTouchPosition()
+    }
+    touchStartRef.current = null
+    setDropPosition(null)
   }
 
   return (
@@ -224,6 +444,8 @@ export const NoteItemSimple = memo(function NoteItemSimple({ note, selectedNoteI
       )}
 
       <div
+        ref={elementRef}
+        data-note-id={note.id}
         draggable={!isEditing}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
@@ -232,14 +454,21 @@ export const NoteItemSimple = memo(function NoteItemSimple({ note, selectedNoteI
         onDrop={handleDropForReorder}
         onContextMenu={handleContextMenu}
         onClick={handleClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchCancel}
         className={`
           relative flex items-center px-2 py-1 transition-all duration-200 group
           ${isSelected ? 'bg-amber-100 dark:bg-[#1e1e1e]' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'}
           ${isDragging ? 'opacity-30 cursor-grabbing' : 'cursor-pointer'}
+          ${isTouchDragging ? 'touch-none' : ''}
         `}
         style={{
           paddingLeft: `${level * 16 + 8}px`,
-          userSelect: 'none'
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          touchAction: isTouchDragging ? 'none' : 'pan-y' // 드래그 중일 때는 터치 이벤트 막기
         }}
       >
       {/* 하단 드롭 인디케이터 */}

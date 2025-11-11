@@ -11,7 +11,6 @@ import TextAlign from '@tiptap/extension-text-align'
 import { Color } from '@tiptap/extension-color'
 import { FontFamily } from '@tiptap/extension-font-family'
 import { TextStyle } from '@tiptap/extension-text-style'
-import { Link } from '@tiptap/extension-link'
 import { Underline } from '@tiptap/extension-underline'
 import { debounce } from 'lodash'
 import { FontSize } from './extensions/FontSize'
@@ -115,14 +114,6 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote, onRenameNote, onTogg
         types: ['paragraph', 'heading'],
         lineHeights: ['1.0', '1.15', '1.5', '1.75', '2.0', '2.5', '3.0'],
         defaultLineHeight: '1.5'
-      }),
-
-      // 링크
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: 'text-blue-600 underline cursor-pointer'
-        }
       })
     ],
     content: '',
@@ -906,22 +897,6 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote, onRenameNote, onTogg
             )}
           </div>
 
-          {/* 링크 - 비활성화 */}
-          <div className="relative group">
-            <button
-              disabled
-              className="p-2 border border-gray-300 dark:border-[#3e3e42] rounded bg-gray-100 dark:bg-[#252526] opacity-50 cursor-not-allowed"
-              title="링크 (비활성화)"
-            >
-              <svg className="w-5 h-5 text-gray-700 dark:text-[#cccccc]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-              </svg>
-            </button>
-            {/* 툴팁 */}
-            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-              링크 (비활성화)
-            </div>
-          </div>
         </div>
 
       </div>
