@@ -1,0 +1,21 @@
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 앰버 배경 + 하얀색 메모장 아이콘 -->
+  
+  <!-- 배경 (앰버) -->
+  <rect width="80" height="80" rx="16" fill="#f59e0b"/>
+  
+  <g transform="translate(40, 40)">
+    <!-- 메모장 본체 (하얀색) -->
+    <rect x="-22" y="-27" width="44" height="54" rx="4" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="3"/>
+    
+    <!-- 나선형 링 (상단 - 하얀색) -->
+    <circle cx="-12" cy="-30" r="3" fill="none" stroke="#FFFFFF" stroke-width="2.5"/>
+    <circle cx="0" cy="-30" r="3" fill="none" stroke="#FFFFFF" stroke-width="2.5"/>
+    <circle cx="12" cy="-30" r="3" fill="none" stroke="#FFFFFF" stroke-width="2.5"/>
+    
+    <!-- 큰 M (앰버 색상) -->
+    <text x="0" y="6" font-family="Arial, sans-serif" font-size="42" font-weight="900" fill="#f59e0b" text-anchor="middle" dominant-baseline="middle">
+      M
+    </text>
+  </g>
+</svg>
