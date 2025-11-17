@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAdmin } from '../hooks/useAdmin'
 import { getPendingApprovals, getApprovedUsers, approveUser, rejectUser, signOut } from '../services/auth'
+import { useAuthStore } from '../stores/authStore'
 import DarkModeToggle from '../components/common/DarkModeToggle'
 import logoLight from '../assets/images/memoeat_logo_dark.svg'
 import logoDark from '../assets/images/memoeat_logo_amber_bg_white_text.svg'
@@ -78,9 +79,21 @@ function AdminPage() {
   }
 
   const handleSignOut = async () => {
-    const { error } = await signOut()
-    if (!error) {
-      navigate('/')
+    try {
+      const { error } = await signOut()
+      if (error) {
+        showErrorToast('로그아웃 중 오류가 발생했습니다.')
+        return
+      }
+
+      // Zustand store 초기화
+      const { clearUser } = useAuthStore.getState()
+      clearUser()
+
+      navigate('/', { replace: true })
+    } catch (err) {
+      console.error('Logout error:', err)
+      showErrorToast('로그아웃 중 오류가 발생했습니다.')
     }
   }
 

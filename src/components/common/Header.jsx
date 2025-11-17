@@ -33,9 +33,22 @@ function Header({ onMenuToggle, showMenuButton = true, isSidebarOpen = true }) {
   }, [settingsOpen])
 
   const handleSignOut = async () => {
-    const { error } = await signOut()
-    if (!error) {
-      navigate('/')
+    try {
+      const { error } = await signOut()
+      if (error) {
+        showErrorToast('로그아웃 중 오류가 발생했습니다.')
+        return
+      }
+
+      // Zustand store 초기화
+      const { clearUser } = useAuthStore.getState()
+      clearUser()
+
+      // 메인 화면으로 리다이렉트
+      navigate('/', { replace: true })
+    } catch (err) {
+      console.error('Logout error:', err)
+      showErrorToast('로그아웃 중 오류가 발생했습니다.')
     }
   }
 

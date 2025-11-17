@@ -170,9 +170,18 @@ export const signOut = async () => {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
 
+    // 남아있는 스토리지 세션 제거
+    customStorage.clearAuthSession()
+
     return { error: null }
   } catch (error) {
     console.error('SignOut error:', error)
+    // 에러가 발생해도 스토리지는 정리
+    try {
+      customStorage.clearAuthSession()
+    } catch (clearError) {
+      console.error('Clear storage error:', clearError)
+    }
     return { error: error.message }
   }
 }
