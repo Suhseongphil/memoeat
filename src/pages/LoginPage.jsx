@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { signIn } from '../services/auth'
 import { applyTheme, initializeTheme } from '../config/theme'
+import { useAuthStore } from '../stores/authStore'
 import DarkModeToggle from '../components/common/DarkModeToggle'
 import logoLight from '../assets/images/memoeat_logo_amber_bg_white_text.svg'
 import logoDark from '../assets/images/memoeat_logo_dark.svg'
 
 function LoginPage() {
   const navigate = useNavigate()
+  const fetchUser = useAuthStore((state) => state.fetchUser)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -57,16 +59,30 @@ function LoginPage() {
 
       if (signInError) {
         setError(signInError)
+        setLoading(false)
         return
       }
 
-      if (isApproved) {
-        // 승인된 사용자는 대시보드로 이동
-        navigate('/dashboard')
+      if (!isApproved || !user) {
+        setError('로그인에 실패했습니다.')
+        setLoading(false)
+        return
+      }
+
+      // Zustand store 업데이트 (preferences 포함)
+      // fetchUser를 호출하여 모든 사용자 정보와 preferences를 로드
+      const result = await fetchUser()
+      
+      if (result.success) {
+        // store 업데이트 완료 후 리다이렉트
+        navigate('/dashboard', { replace: true })
+      } else {
+        setError(result.error || '사용자 정보를 불러오는 중 오류가 발생했습니다.')
+        setLoading(false)
       }
     } catch (err) {
+      console.error('Login error:', err)
       setError(err.message || '로그인 중 오류가 발생했습니다.')
-    } finally {
       setLoading(false)
     }
   }
