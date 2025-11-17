@@ -120,6 +120,203 @@ function Editor({ note, onUpdateNote, onSave, onDeleteNote, onRenameNote, onTogg
     editorProps: {
       attributes: {
         class: 'focus:outline-none p-6'
+      },
+      handleKeyDown: (view, event) => {
+        // Tab 키 처리: 들여쓰기 추가
+        if (event.key === 'Tab' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+          event.preventDefault()
+          
+          const { state, dispatch } = view
+          const { selection } = state
+          const { schema } = state
+          
+          // 들여쓰기 공백 (4칸) - HTML에서 보존되도록 &nbsp; 사용
+          // 일반 공백은 HTML 파싱 시 정규화될 수 있으므로 &nbsp; 사용
+          const indent = '\u00A0\u00A0\u00A0\u00A0' // 4개의 non-breaking space
+          
+          // 선택된 텍스트가 있는 경우
+          if (!selection.empty) {
+            const { from, to } = selection
+            const tr = state.tr
+            
+            // 선택 범위 내의 모든 블록(paragraph) 찾기
+            const $from = state.doc.resolve(from)
+            const $to = state.doc.resolve(to)
+            
+            // 각 블록의 시작 위치 수집
+            const blockPositions = []
+            
+            // from부터 to까지 모든 블록 순회
+            state.doc.nodesBetween(from, to, (node, pos) => {
+              // paragraph나 heading 같은 블록 노드인 경우
+              if (node.type.name === 'paragraph' || node.type.name === 'heading') {
+                // 블록이 선택 범위 내에 있는지 확인
+                const blockEnd = pos + node.nodeSize
+                if (blockEnd > from && pos < to) {
+                  // 블록 내부의 첫 번째 텍스트 노드 위치 찾기
+                  let textStart = null
+                  let accumulatedSize = 1 // pos + 1부터 시작
+                  
+                  // 블록 내부를 순회하며 첫 번째 텍스트 노드 찾기
+                  for (let i = 0; i < node.childCount; i++) {
+                    const childNode = node.child(i)
+                    if (childNode.isText && textStart === null) {
+                      textStart = pos + accumulatedSize
+                      break
+                    }
+                    accumulatedSize += childNode.nodeSize
+                  }
+                  
+                  // 텍스트 노드를 찾지 못한 경우 (빈 블록), 블록 시작 위치 사용
+                  if (textStart === null) {
+                    textStart = pos + 1
+                  }
+                  
+                  blockPositions.push({
+                    blockStart: pos,
+                    textStart: textStart,
+                    node: node
+                  })
+                }
+              }
+            })
+            
+            // 각 블록의 시작 부분에 들여쓰기 추가 (역순으로 처리하여 위치 변경 방지)
+            blockPositions.sort((a, b) => b.textStart - a.textStart)
+            
+            for (const block of blockPositions) {
+              // 블록의 실제 텍스트 시작 부분 확인
+              // 텍스트 시작 위치의 앞부분 확인 (이미 들여쓰기가 있는지)
+              const beforeText = state.doc.textBetween(block.blockStart + 1, block.textStart)
+              // 일반 공백과 non-breaking space 모두 확인
+              const leadingSpaces = beforeText.match(/^[\u0020\u00A0]*/)?.[0]?.length || 0
+              
+              // 들여쓰기가 부족하면 추가
+              if (leadingSpaces < indent.length) {
+                tr.insertText(indent, block.textStart)
+              }
+            }
+            
+            dispatch(tr)
+          } else {
+            // 커서 위치에 들여쓰기 추가
+            const { from } = selection
+            const $pos = state.doc.resolve(from)
+            const lineStart = $pos.start($pos.depth)
+            const lineText = state.doc.textBetween(lineStart, from)
+            
+            // 줄 시작 부분에 들여쓰기가 없으면 추가
+            if (!lineText.trim().length || lineText === lineText.trimStart()) {
+              const tr = state.tr.insertText(indent, from)
+              dispatch(tr)
+            } else {
+              // 이미 들여쓰기가 있으면 그냥 추가
+              const tr = state.tr.insertText(indent, from)
+              dispatch(tr)
+            }
+          }
+          
+          return true
+        }
+        
+        // Shift+Tab: 내어쓰기 (들여쓰기 한 번만큼 제거)
+        if (event.key === 'Tab' && event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+          event.preventDefault()
+          
+          const { state, dispatch } = view
+          const { selection } = state
+          
+          // 들여쓰기 단위 (4칸)
+          const indentSize = 4
+          
+          // 선택된 텍스트가 있는 경우
+          if (!selection.empty) {
+            const { from, to } = selection
+            const tr = state.tr
+            
+            // 각 블록의 시작 위치 수집
+            const blockPositions = []
+            
+            // from부터 to까지 모든 블록 순회
+            state.doc.nodesBetween(from, to, (node, pos) => {
+              // paragraph나 heading 같은 블록 노드인 경우
+              if (node.type.name === 'paragraph' || node.type.name === 'heading') {
+                // 블록 내부의 첫 번째 텍스트 노드 위치 찾기
+                let textStart = null
+                
+                node.forEach((childNode, childOffset) => {
+                  if (textStart === null && childNode.isText) {
+                    textStart = pos + childOffset + 1
+                  }
+                })
+                
+                // 텍스트 노드를 찾지 못한 경우 (빈 블록), 블록 시작 위치 사용
+                if (textStart === null) {
+                  textStart = pos + 1
+                }
+                
+                // 블록이 선택 범위 내에 있는지 확인
+                const blockEnd = pos + node.nodeSize
+                if (blockEnd > from && pos < to) {
+                  blockPositions.push({
+                    blockStart: pos,
+                    textStart: textStart,
+                    node: node
+                  })
+                }
+              }
+            })
+            
+            // 각 블록의 시작 부분에서 들여쓰기 제거 (역순으로 처리하여 위치 변경 방지)
+            blockPositions.sort((a, b) => b.textStart - a.textStart)
+            
+            for (const block of blockPositions) {
+              // 블록의 실제 텍스트 시작 부분 확인
+              const beforeText = state.doc.textBetween(block.blockStart + 1, block.textStart)
+              // 일반 공백과 non-breaking space 모두 확인
+              const leadingSpaces = beforeText.match(/^[\u0020\u00A0]*/)?.[0]?.length || 0
+              
+              // 공백이 4칸 이상이면 4칸 제거, 그보다 적으면 모두 제거
+              if (leadingSpaces >= indentSize) {
+                tr.delete(block.textStart - indentSize, block.textStart)
+              } else if (leadingSpaces > 0) {
+                tr.delete(block.textStart - leadingSpaces, block.textStart)
+              }
+            }
+            
+            dispatch(tr)
+          } else {
+            // 커서 위치에서 앞의 공백 제거
+            const { from } = selection
+            const $pos = state.doc.resolve(from)
+            const lineStart = $pos.start($pos.depth)
+            const lineText = state.doc.textBetween(lineStart, from)
+            
+            // 줄 시작부터 커서까지의 텍스트에서 공백 확인 (일반 공백과 non-breaking space 모두)
+            let spaceCount = 0
+            for (let i = lineText.length - 1; i >= 0; i--) {
+              const char = lineText[i]
+              if (char === ' ' || char === '\u00A0') {
+                spaceCount++
+              } else {
+                break
+              }
+            }
+            
+            // 공백이 4칸 이상이면 4칸 제거, 그보다 적으면 모두 제거
+            if (spaceCount >= indentSize) {
+              const tr = state.tr.delete(from - indentSize, from)
+              dispatch(tr)
+            } else if (spaceCount > 0) {
+              const tr = state.tr.delete(from - spaceCount, from)
+              dispatch(tr)
+            }
+          }
+          
+          return true
+        }
+        
+        return false
       }
     },
     onUpdate: ({ editor }) => {
