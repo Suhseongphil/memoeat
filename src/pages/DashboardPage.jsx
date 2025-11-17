@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCurrentUser, signOut } from '../services/auth'
+import { useAuthStore } from '../stores/authStore'
 import DarkModeToggle from '../components/common/DarkModeToggle'
 import { showErrorToast, showSuccessToast } from '../lib/toast.jsx'
 
@@ -27,13 +28,23 @@ function DashboardPage() {
   }
 
   const handleSignOut = async () => {
-    const { error } = await signOut()
-    if (error) {
+    try {
+      const { error } = await signOut()
+      if (error) {
+        showErrorToast('로그아웃 중 오류가 발생했습니다.')
+        return
+      }
+
+      // Zustand store 초기화
+      const { clearUser } = useAuthStore.getState()
+      clearUser()
+
+      showSuccessToast('로그아웃 되었습니다.')
+      navigate('/', { replace: true })
+    } catch (err) {
+      console.error('Logout error:', err)
       showErrorToast('로그아웃 중 오류가 발생했습니다.')
-      return
     }
-    showSuccessToast('로그아웃 되었습니다.')
-    navigate('/')
   }
 
   if (loading) {
