@@ -95,6 +95,11 @@ export const signIn = async (email, password, rememberMe = false) => {
 
     if (authError) throw authError
 
+    // 세션이 제대로 저장되었는지 확인
+    if (!authData.session) {
+      throw new Error('세션 생성에 실패했습니다.')
+    }
+
     // 3. 승인 여부 확인
     const { data: approvalData, error: approvalError } = await supabase
       .from('user_approvals')
@@ -108,6 +113,21 @@ export const signIn = async (email, password, rememberMe = false) => {
     if (!approvalData.is_approved) {
       await supabase.auth.signOut()
       throw new Error('관리자 승인 대기 중입니다. 승인 후 다시 로그인해주세요.')
+    }
+
+    // 5. 세션이 제대로 저장되었는지 한 번 더 확인 (비동기 저장 완료 대기)
+    // Supabase가 세션을 storage에 저장하는 데 약간의 시간이 걸릴 수 있음
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    // 세션 확인
+    const { data: { session: verifySession } } = await supabase.auth.getSession()
+    if (!verifySession) {
+      console.warn('세션 저장 확인 실패, 재시도...')
+      // 재시도: 세션을 다시 가져옴
+      const { data: { session: retrySession } } = await supabase.auth.getSession()
+      if (!retrySession) {
+        throw new Error('세션 저장에 실패했습니다. 다시 시도해주세요.')
+      }
     }
 
     return {
@@ -172,7 +192,7 @@ export const getCurrentUser = async () => {
     }
 
     if (!user) {
-      return { user: null, session: null, isApproved: false, error: null }
+      return { user: null, session: null, isApproved: false, preferences: null, error: null }
     }
 
     // 세션 정보 가져오기
@@ -180,22 +200,29 @@ export const getCurrentUser = async () => {
     if (sessionError) throw sessionError
 
     if (!session) {
-      return { user: null, session: null, isApproved: false, error: null }
+      return { user: null, session: null, isApproved: false, preferences: null, error: null }
     }
 
-    // 승인 여부 확인
+    // 승인 여부와 preferences를 한 번에 가져오기
     const { data: approvalData, error: approvalError } = await supabase
       .from('user_approvals')
-      .select('is_approved')
+      .select('is_approved, preferences')
       .eq('user_id', user.id)
       .single()
 
     if (approvalError) throw approvalError
 
+    // 기본 preferences 설정
+    const defaultPreferences = {
+      theme: 'light',
+      sidebarPosition: 'left'
+    }
+
     return {
       user,
       session,
       isApproved: approvalData.is_approved,
+      preferences: approvalData.preferences || defaultPreferences,
       error: null
     }
   } catch (error) {
@@ -224,6 +251,7 @@ export const getCurrentUser = async () => {
         user: null,
         session: null,
         isApproved: false,
+        preferences: null,
         error: null,
         needsReauth: true
       }
@@ -234,6 +262,7 @@ export const getCurrentUser = async () => {
       user: null,
       session: null,
       isApproved: false,
+      preferences: null,
       error: errorMessage
     }
   }

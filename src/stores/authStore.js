@@ -56,36 +56,30 @@ export const useAuthStore = create((set, get) => ({
         document.documentElement.classList.remove('dark')
       }
 
-      // 2. 사용자 정보 가져오기
-      const { user, session, isApproved, error, needsReauth } = await getCurrentUser()
+      // 2. 사용자 정보와 preferences를 한 번에 가져오기
+      const { user, session, isApproved, preferences, error, needsReauth } = await getCurrentUser()
 
       if (needsReauth) {
-        set({ user: null, session: null, isApproved: false, loading: false, error: null })
+        set({ user: null, session: null, isApproved: false, preferences: { theme: 'light', sidebarPosition: 'left' }, loading: false, error: null })
         return { success: false, error: 'SESSION_EXPIRED', needsReauth: true }
       }
 
       if (error) {
-        set({ user: null, session: null, isApproved: false, loading: false, error })
+        set({ user: null, session: null, isApproved: false, preferences: { theme: 'light', sidebarPosition: 'left' }, loading: false, error })
         return { success: false, error }
       }
 
-      // 3. 사용자 설정 불러오기 (병렬 처리 가능하지만 순차 처리로 단순화)
-      let userPreferences = { theme: 'light', sidebarPosition: 'left' }
-      if (user) {
-        const { preferences } = await getUserPreferences(user.id)
-        userPreferences = preferences
-
-        // 4. 사용자 설정의 테마 적용 (localStorage보다 우선)
-        if (preferences.theme === 'dark') {
-          document.documentElement.classList.add('dark')
-          localStorage.setItem('darkMode', 'true')
-        } else {
-          document.documentElement.classList.remove('dark')
-          localStorage.setItem('darkMode', 'false')
-        }
+      // 3. 사용자 설정의 테마 적용 (preferences가 있으면)
+      const userPreferences = preferences || { theme: 'light', sidebarPosition: 'left' }
+      if (user && userPreferences.theme === 'dark') {
+        document.documentElement.classList.add('dark')
+        localStorage.setItem('darkMode', 'true')
+      } else if (user && userPreferences.theme === 'light') {
+        document.documentElement.classList.remove('dark')
+        localStorage.setItem('darkMode', 'false')
       }
 
-      // 5. 모든 데이터 로드 완료 후 상태 업데이트
+      // 4. 모든 데이터 로드 완료 후 상태 업데이트
       set({
         user,
         session,
@@ -98,7 +92,7 @@ export const useAuthStore = create((set, get) => ({
       return { success: true, user, session, isApproved }
     } catch (err) {
       const errorMessage = err.message || '사용자 정보를 가져오는 중 오류가 발생했습니다.'
-      set({ user: null, session: null, isApproved: false, loading: false, error: errorMessage })
+      set({ user: null, session: null, isApproved: false, preferences: { theme: 'light', sidebarPosition: 'left' }, loading: false, error: errorMessage })
       return { success: false, error: errorMessage }
     }
   },

@@ -1,20 +1,9 @@
-import { useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
-import { initializeTheme } from '../../config/theme'
 
 function ProtectedRoute({ children }) {
-  const { user, isApproved, loading, fetchUser } = useAuthStore()
-
-  useEffect(() => {
-    // 초기 테마 적용 (빠른 적용을 위해)
-    initializeTheme()
-
-    // 사용자 정보 로드 (테마 포함)
-    // fetchUser는 Zustand 액션이므로 안정적이며, 초기 마운트 시에만 호출
-    fetchUser()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  // main.jsx에서 이미 초기 인증 체크를 수행하므로 여기서는 상태만 확인
+  const { user, isApproved, loading } = useAuthStore()
 
   // 로딩 중
   if (loading) {
