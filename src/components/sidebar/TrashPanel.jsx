@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { createPortal } from 'react-dom'
 
 const formatDeletedAt = (timestamp) => {
@@ -14,40 +14,15 @@ const formatDeletedAt = (timestamp) => {
 }
 
 function TrashPanel({
-  trashedFolders = [],
   trashedNotes = [],
-  onRestoreFolder,
   onRestoreNote,
-  onDeleteFolder,
   onDeleteNote,
   onEmptyTrash,
   isLoading,
   isProcessing,
   onClose
 }) {
-  const bundles = useMemo(() => {
-    const folderMap = new Map()
-    trashedFolders.forEach((folder) => {
-      folderMap.set(folder.id, { folder, notes: [] })
-    })
-
-    const orphanedNotes = []
-    trashedNotes.forEach((note) => {
-      const parentId = note.data?.folder_id
-      if (parentId && folderMap.has(parentId)) {
-        folderMap.get(parentId).notes.push(note)
-      } else {
-        orphanedNotes.push(note)
-      }
-    })
-
-    return {
-      folderBundles: Array.from(folderMap.values()),
-      orphanedNotes
-    }
-  }, [trashedFolders, trashedNotes])
-
-  const hasItems = bundles.folderBundles.length > 0 || bundles.orphanedNotes.length > 0
+  const hasItems = trashedNotes.length > 0
   const [menuState, setMenuState] = useState({
     open: false,
     type: null,
@@ -67,15 +42,11 @@ function TrashPanel({
     if (!menuState.open) return
 
     if (action === 'restore') {
-      if (menuState.type === 'folder') {
-        onRestoreFolder?.(menuState.id)
-      } else if (menuState.type === 'note') {
+      if (menuState.type === 'note') {
         onRestoreNote?.(menuState.id)
       }
     } else if (action === 'delete') {
-      if (menuState.type === 'folder') {
-        onDeleteFolder?.(menuState.id)
-      } else if (menuState.type === 'note') {
+      if (menuState.type === 'note') {
         onDeleteNote?.(menuState.id)
       }
     }
@@ -165,77 +136,10 @@ function TrashPanel({
             <div className="h-16 animate-pulse rounded-xl bg-gray-100 dark:bg-[#2d2d30]" />
           </div>
         ) : hasItems ? (
-          <>
-            {bundles.folderBundles.length > 0 && (
-              <section>
-                <h3 className="mb-2 text-sm font-semibold text-gray-600 dark:text-[#9d9d9d]">삭제된 폴더 묶음</h3>
-                <div className="space-y-3">
-                  {bundles.folderBundles.map(({ folder, notes }) => (
-                    <div
-                      key={folder.id}
-                      className="rounded-xl border border-gray-200 bg-white p-4 dark:border-[#2d2d30] dark:bg-[#1e1e1e]"
-                      onContextMenu={(e) => {
-                        e.preventDefault()
-                        openMenu('folder', folder.id, getMenuPositionByPoint(e.clientX, e.clientY))
-                      }}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-sm font-semibold text-gray-800 dark:text-[#cccccc]">
-                            {folder.data?.name || '이름 없는 폴더'}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-[#7a7a7a]">
-                            삭제됨: {formatDeletedAt(folder.deleted_at || folder.data?.deleted_at)}
-                          </p>
-                          <p className="mt-1 text-xs text-gray-400 dark:text-[#5f5f5f]">
-                            포함된 항목: 폴더 {notes.length > 0 ? '및 메모 ' : ''}
-                            {notes.length > 0 ? `${notes.length}개` : '0개'}
-                          </p>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            const rect = e.currentTarget.getBoundingClientRect()
-                            openMenu('folder', folder.id, getMenuPositionByRect(rect))
-                          }}
-                          disabled={isProcessing}
-                          className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:text-[#9d9d9d] dark:hover:bg-[#2d2d30] transition-colors"
-                          aria-label="폴더 옵션"
-                        >
-                          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                            <circle cx="12" cy="5" r="2" />
-                            <circle cx="12" cy="12" r="2" />
-                            <circle cx="12" cy="19" r="2" />
-                          </svg>
-                        </button>
-                      </div>
-
-                      {notes.length > 0 && (
-                        <div className="mt-4 space-y-2 rounded-lg bg-gray-50 p-3 text-xs text-gray-600 dark:bg-[#2d2d30] dark:text-[#9d9d9d]">
-                          <div className="font-semibold text-gray-700 dark:text-[#cccccc]">포함된 메모</div>
-                          {notes.slice(0, 5).map((note) => (
-                            <div key={note.id} className="truncate">
-                              • {note.data?.title || '제목 없음'}
-                            </div>
-                          ))}
-                          {notes.length > 5 && (
-                            <div className="text-gray-400 dark:text-[#7a7a7a]">
-                              외 {notes.length - 5}개 더 포함되어 있습니다.
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {bundles.orphanedNotes.length > 0 && (
-              <section>
-                <h3 className="mb-2 text-sm font-semibold text-gray-600 dark:text-[#9d9d9d]">삭제된 메모</h3>
-                <div className="space-y-3">
-                  {bundles.orphanedNotes.map((note) => (
+          <section>
+            <h3 className="mb-2 text-sm font-semibold text-gray-600 dark:text-[#9d9d9d]">삭제된 메모</h3>
+            <div className="space-y-3">
+              {trashedNotes.map((note) => (
                     <div
                       key={note.id}
                       className="rounded-xl border border-gray-200 bg-white p-4 dark:border-[#2d2d30] dark:bg-[#1e1e1e]"
@@ -251,9 +155,6 @@ function TrashPanel({
                           </p>
                           <p className="text-xs text-gray-500 dark:text-[#7a7a7a]">
                             삭제됨: {formatDeletedAt(note.deleted_at || note.data?.deleted_at)}
-                          </p>
-                          <p className="mt-1 text-xs text-gray-400 dark:text-[#5f5f5f]">
-                            소속 폴더: {note.data?.folder_id ? `폴더 ${note.data.folder_id}` : '루트'}
                           </p>
                         </div>
                         <button
@@ -274,11 +175,9 @@ function TrashPanel({
                         </button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </section>
-            )}
-          </>
+              ))}
+            </div>
+          </section>
         ) : (
           <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center dark:border-[#2d2d30] dark:bg-[#1a1a1a]">
             <svg
@@ -290,7 +189,7 @@ function TrashPanel({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M4 7h16M9 3h6" />
             </svg>
             <p className="text-sm font-medium text-gray-600 dark:text-[#9d9d9d]">휴지통이 비어 있습니다.</p>
-            <p className="text-xs text-gray-500 dark:text-[#7a7a7a]">삭제된 폴더와 메모는 여기에서 복구하거나 영구 삭제할 수 있어요.</p>
+            <p className="text-xs text-gray-500 dark:text-[#7a7a7a]">삭제된 메모는 여기에서 복구하거나 영구 삭제할 수 있어요.</p>
           </div>
         )}
       </div>

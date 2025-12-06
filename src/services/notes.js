@@ -10,21 +10,13 @@ export const createNote = async (userId, noteData = {}) => {
   try {
     const now = new Date().toISOString()
 
-    // 같은 폴더 내 메모들의 order 값 찾기 (직접 쿼리)
-    const folderId = noteData.folder_id || null
-    let query = supabase
+    // 모든 메모의 order 값 찾기 (폴더 구조 없으므로 모든 메모가 같은 레벨)
+    const { data: existingNotes, error: queryError } = await supabase
       .from('notes')
       .select('id, data')
       .eq('user_id', userId)
       .is('deleted_at', null)
 
-    if (folderId === null) {
-      query = query.is('data->folder_id', null)
-    } else {
-      query = query.eq('data->folder_id', folderId)
-    }
-
-    const { data: existingNotes, error: queryError } = await query
     if (queryError) throw queryError
 
     // 새 메모를 가장 하단에 배치: 기존 메모들의 최대 order 값보다 큰 값으로 설정
@@ -39,7 +31,6 @@ export const createNote = async (userId, noteData = {}) => {
     const data = {
       title: noteData.title || '제목 없음',
       content: noteData.content || '',
-      folder_id: noteData.folder_id || null,
       is_favorite: noteData.is_favorite || false,
       order: noteData.order !== undefined ? noteData.order : newOrder,
       created_at: now,
@@ -73,15 +64,6 @@ export const getNotes = async (userId, filters = {}) => {
       .from('notes')
       .select('id, data, created_at, updated_at, deleted_at')
       .eq('user_id', userId)
-
-    // 폴더 필터
-    if (filters.folderId !== undefined) {
-      if (filters.folderId === null) {
-        query = query.is('data->folder_id', null)
-      } else {
-        query = query.eq('data->folder_id', filters.folderId)
-      }
-    }
 
     // 즐겨찾기 필터
     if (filters.isFavorite) {
@@ -379,10 +361,9 @@ export const reorderNotes = async (noteId, targetNoteId, position, allNotes) => 
       return { success: false, error: '메모를 찾을 수 없습니다' }
     }
 
-    // 같은 폴더에 속한 메모들만 필터링
-    const folderId = targetNote.data.folder_id
+    // 모든 메모를 필터링 (폴더 구조 없으므로 모든 메모가 같은 레벨)
     const siblings = allNotes
-      .filter(n => n.data.folder_id === folderId && n.id !== noteId)
+      .filter(n => n.id !== noteId)
       .sort((a, b) => (a.data.order || 0) - (b.data.order || 0))
 
     // 타겟의 인덱스 찾기
@@ -403,7 +384,6 @@ export const reorderNotes = async (noteId, targetNoteId, position, allNotes) => 
         const updatedData = {
           ...note.data,
           order: newOrder,
-          folder_id: folderId, // 드래그한 메모의 folder_id도 업데이트
           updated_at: new Date().toISOString()
         }
 

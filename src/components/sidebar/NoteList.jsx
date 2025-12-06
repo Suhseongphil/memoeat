@@ -9,9 +9,8 @@ export const NoteItemSimple = memo(function NoteItemSimple({
   onDeleteNote, 
   onRenameNote, 
   onToggleFavorite, 
-  onMoveNote, 
   onReorderNote, 
-  level 
+  level = 0
 }) {
   const noteData = note.data
   const isSelected = note.id === selectedNoteId
@@ -113,8 +112,7 @@ export const NoteItemSimple = memo(function NoteItemSimple({
 
     const dragData = {
       type: 'NOTE',
-      id: note.id,
-      folder_id: noteData.folder_id
+      id: note.id
     }
 
     // 드롭 이벤트에서 사용할 데이터 저장
@@ -148,8 +146,8 @@ export const NoteItemSimple = memo(function NoteItemSimple({
       return
     }
     
-    // 같은 타입이고 같은 폴더에 있는 메모끼리만 순서 변경 가능
-    if (item.id !== note.id && item.folder_id === noteData.folder_id) {
+    // 같은 메모끼리는 순서 변경 불가
+    if (item.id !== note.id) {
       const rect = e.currentTarget.getBoundingClientRect()
       const relativeY = e.clientY - rect.top
       const height = rect.height
@@ -193,7 +191,7 @@ export const NoteItemSimple = memo(function NoteItemSimple({
       
       if (!item) return
 
-      if (item.type === 'NOTE' && item.id !== note.id && item.folder_id === noteData.folder_id && position) {
+      if (item.type === 'NOTE' && item.id !== note.id && position) {
         onReorderNote?.(item.id, note.id, position)
       }
       
@@ -402,8 +400,7 @@ function NoteItem({ note, selectedNoteId, onNoteSelect, onDeleteNote }) {
     setIsDragging(true)
     const dragData = {
       type: 'NOTE',
-      id: note.id,
-      folder_id: noteData.folder_id
+      id: note.id
     }
     e.dataTransfer.setData('application/json', JSON.stringify(dragData))
     e.dataTransfer.effectAllowed = 'move'

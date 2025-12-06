@@ -8,7 +8,6 @@ function FavoritesPanel({
   onDeleteNote,
   onRenameNote,
   onToggleFavorite,
-  onMoveNote,
   onReorderNote,
   onClose
 }) {
@@ -73,7 +72,6 @@ function FavoritesPanel({
                 onDeleteNote={onDeleteNote}
                 onRenameNote={onRenameNote}
                 onToggleFavorite={onToggleFavorite}
-                onMoveNote={onMoveNote}
                 onReorderNote={onReorderNote}
                 level={0}
               />
