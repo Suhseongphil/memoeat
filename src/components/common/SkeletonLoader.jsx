@@ -32,22 +32,6 @@ export function NoteListSkeleton({ count = 5 }) {
   )
 }
 
-// 폴더 트리 스켈레톤
-export function FolderTreeSkeleton({ count = 3 }) {
-  return (
-    <div className="p-2 space-y-2">
-      {Array.from({ length: count }).map((_, index) => (
-        <div key={index} className="flex items-center space-x-2 px-2 py-1.5 animate-pulse">
-          {/* 폴더 아이콘 */}
-          <div className="w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded" />
-          {/* 폴더 이름 */}
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded flex-1" />
-        </div>
-      ))}
-    </div>
-  )
-}
-
 // 에디터 스켈레톤
 export function EditorSkeleton() {
   return (

@@ -152,7 +152,7 @@ function App() {
         </div>
 
         {/* 기능 소개 */}
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+        <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
           <div className={`p-6 rounded-xl shadow-md ${
             isDark ? 'bg-[#252526] border border-[#3e3e42]' : 'bg-white border border-gray-200'
           }`}>
@@ -164,19 +164,6 @@ function App() {
               isDark ? 'text-[#9d9d9d]' : 'text-gray-600'
             }`}>
               필요한 형식을 바로 적용하고 흐름을 끊지 않는 편집 경험
-            </p>
-          </div>
-          <div className={`p-6 rounded-xl shadow-md ${
-            isDark ? 'bg-[#252526] border border-[#3e3e42]' : 'bg-white border border-gray-200'
-          }`}>
-            <div className="text-3xl mb-3">📁</div>
-            <h3 className={`font-bold mb-2 ${
-              isDark ? 'text-[#cccccc]' : 'text-gray-900'
-            }`}>폴더 관리</h3>
-            <p className={`text-sm ${
-              isDark ? 'text-[#9d9d9d]' : 'text-gray-600'
-            }`}>
-              Windows 탐색기 스타일의 직관적인 폴더 구조
             </p>
           </div>
           <div className={`p-6 rounded-xl shadow-md ${

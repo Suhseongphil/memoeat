@@ -2,8 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { signOut } from '../../services/auth'
 import { useAuthStore } from '../../stores/authStore'
-import logoLight from '../../assets/images/memoeat_logo_amber_bg_white_text.svg'
-import logoDark from '../../assets/images/memoeat_logo_dark.svg'
 import { showErrorToast, showSuccessToast } from '../../lib/toast.jsx'
 
 function Header({ onMenuToggle, showMenuButton = true, isSidebarOpen = true }) {
@@ -75,8 +73,8 @@ function Header({ onMenuToggle, showMenuButton = true, isSidebarOpen = true }) {
   return (
     <header className="bg-white dark:bg-[#252526] shadow-md border-b border-gray-200 dark:border-[#3e3e42]">
       <div className="max-w-full mx-auto px-4 py-3 flex items-center justify-between">
-        {/* 왼쪽: 모바일 메뉴 버튼 + 로고 */}
-        <div className="flex items-center space-x-4">
+        {/* 왼쪽: 모바일 메뉴 버튼 */}
+        <div className="flex items-center">
           {/* 모바일 사이드바 토글 버튼 */}
           {showMenuButton && (
             <button
@@ -99,12 +97,6 @@ function Header({ onMenuToggle, showMenuButton = true, isSidebarOpen = true }) {
               </svg>
             </button>
           )}
-
-          {/* 로고 */}
-          <Link to="/dashboard" className="flex items-center">
-            <img src={logoLight} alt="MemoEat" className="h-8 dark:hidden" />
-            <img src={logoDark} alt="MemoEat" className="h-8 hidden dark:block" />
-          </Link>
         </div>
 
         {/* 오른쪽: 관리자 버튼 + 설정 버튼 + 로그아웃 */}
