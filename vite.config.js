@@ -17,7 +17,6 @@ export default defineConfig({
           'tiptap-vendor': [
             '@tiptap/react',
             '@tiptap/core',
-            '@tiptap/starter-kit',
             '@tiptap/extension-bold',
             '@tiptap/extension-italic',
             '@tiptap/extension-heading',
@@ -26,7 +25,6 @@ export default defineConfig({
             '@tiptap/extension-color',
             '@tiptap/extension-font-family',
             '@tiptap/extension-text-style',
-            '@tiptap/extension-link',
             '@tiptap/extension-underline',
           ],
           'supabase-vendor': ['@supabase/supabase-js'],

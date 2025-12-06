@@ -1,7 +1,7 @@
 # 📝 MemoEat
 
 > **정보를 먹다, 지식을 소화하다**  
-> 폴더 기반 지식 관리를 지원하는 스마트 메모 애플리케이션
+> 단순하고 빠른 메모 작성에 집중한 스마트 메모 애플리케이션
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/React-18.x-blue)](https://reactjs.org/)
@@ -12,40 +12,40 @@
 
 ## 🎯 프로젝트 개요
 
-**MemoEat**는 폴더 기반 메모 관리와 자동 저장에 집중한 스마트 메모 애플리케이션입니다.
+**MemoEat**는 단순하고 빠른 메모 작성에 집중한 스마트 메모 애플리케이션입니다.
 
 ### 핵심 가치
 
 - 🧠 **집중력 있는 편집 경험**: 필요한 형식을 즉시 적용하며 흐름을 유지
-- 📁 **Windows 탐색기 스타일 폴더 구조**: 익숙하고 직관적인 관리
 - ⚡ **자동 저장**: 별도의 저장 버튼 없이 실시간 자동 저장
 - 🌙 **다크모드 지원**: 눈의 피로를 줄이는 세련된 UI
 - 🚀 **가볍고 빠름**: 최소한의 기능으로 최대의 효율
+- 📝 **단순함**: 복잡한 구조 없이 메모 작성에만 집중
 
 ---
 
 ## ✨ 주요 기능
 
-### 1️⃣ 폴더 구조 관리
+### 1️⃣ 스마트 메모 편집
 
-- Windows 탐색기 스타일의 폴더 트리
-- 드래그 앤 드롭으로 메모/폴더 이동
-- 폴더 생성/이름 변경/삭제
-- 무제한 중첩 폴더 지원
-
-### 2️⃣ 스마트 메모 편집
-
-- CodeMirror 기반 고성능 에디터
+- Tiptap 기반 리치 텍스트 에디터
 - 자동 저장 (타이핑 후 2초 대기)
 - Undo/Redo 지원
 - 저장 상태 실시간 표시
 
-### 3️⃣ 추가 기능
+### 2️⃣ 메모 관리
 
+- 📝 메모 생성, 수정, 삭제
 - ⭐ 즐겨찾기
 - 🔍 메모 검색 (제목/내용)
-- 📤 메모 공유 (TXT 다운로드, 카카오톡)
+- 📋 메모 순서 변경 (드래그 앤 드롭)
+- 🗑️ 휴지통 (30일 보관 후 자동 삭제)
+
+### 3️⃣ 추가 기능
+
 - 🌓 다크모드
+- 📱 반응형 디자인 (모바일/데스크톱)
+- ⚡ 빠른 성능
 
 ---
 
@@ -55,10 +55,10 @@
 
 - **React 18** + **Vite** - 빠른 개발 환경
 - **Tailwind CSS** - 유틸리티 기반 스타일링
-- **CodeMirror 6** - 고성능 텍스트 에디터
-- **@dnd-kit** - 드래그 앤 드롭
+- **Tiptap** - 리치 텍스트 에디터
 - **React Query** - 서버 상태 관리
 - **React Hot Toast** - 알림
+- **Zustand** - 클라이언트 상태 관리
 
 ### Backend & Database
 
@@ -122,7 +122,7 @@ memoeat/
 │   ├── components/         # 재사용 컴포넌트
 │   │   ├── auth/           # 로그인, 회원가입
 │   │   ├── editor/         # 에디터 컴포넌트
-│   │   ├── sidebar/        # 사이드바, 폴더 트리
+│   │   ├── sidebar/        # 사이드바, 메모 리스트
 │   │   └── common/         # 공통 UI (버튼, 모달 등)
 │   ├── pages/              # 페이지 컴포넌트
 │   │   ├── LoginPage.jsx
@@ -133,7 +133,7 @@ memoeat/
 │   ├── services/           # API 호출 로직
 │   │   ├── supabase.js
 │   │   ├── notes.js
-│   │   └── folders.js
+│   │   └── preferences.js
 │   ├── utils/              # 유틸리티 함수
 │   ├── styles/             # 글로벌 스타일
 │   └── App.jsx
@@ -164,18 +164,6 @@ CREATE TABLE user_approvals (
 );
 ```
 
-### folders (JSONB 기반)
-
-```sql
-CREATE TABLE folders (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) NOT NULL,
-  data JSONB NOT NULL,
-  -- data: { name, parent_id, created_at, updated_at, order }
-  created_at TIMESTAMP DEFAULT NOW()
-);
-```
-
 ### notes (JSONB 기반)
 
 ```sql
@@ -183,7 +171,21 @@ CREATE TABLE notes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES auth.users(id) NOT NULL,
   data JSONB NOT NULL,
-  -- data: { title, content, folder_id, is_favorite, created_at, updated_at }
+  -- data: { title, content, is_favorite, order, created_at, updated_at }
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  deleted_at TIMESTAMP -- 소프트 삭제용
+);
+```
+
+### user_preferences (사용자 설정)
+
+```sql
+CREATE TABLE user_preferences (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) UNIQUE NOT NULL,
+  theme TEXT DEFAULT 'light', -- 'light' | 'dark'
+  sidebar_position TEXT DEFAULT 'left', -- 'left' | 'right'
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
